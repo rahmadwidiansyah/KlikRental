@@ -68,7 +68,8 @@ erDiagram
     users ||--o{ bookings : "melakukan"
     vehicles ||--o{ bookings : "disewa dalam"
     drivers ||--o{ bookings : "ditugaskan pada"
-    zones ||--o{ bookings : "lokasi jemput/kembali"
+    zones ||--o{ bookings : "lokasi jemput"
+    zones ||--o{ bookings : "lokasi kembali"
     bookings ||--|| payments : "memiliki"
     bookings ||--o| reviews : "mendapat"
 
@@ -86,10 +87,13 @@ erDiagram
         bigint id PK
         string name
         enum type "'SUV', 'MPV', dll"
-        decimal price_per_day
+        enum transmission
+        string fuel_type
         int seats
         int luggage_capacity
+        decimal price_per_day
         enum status
+        string image_url
     }
 
     zones {
@@ -123,10 +127,28 @@ erDiagram
     payments {
         bigint id PK
         bigint booking_id FK
-        string transaction_id
-        string transaction_status
+        string transaction_id "Dari Midtrans"
+        string payment_type
         decimal gross_amount
+        string transaction_status
+        datetime settlement_time
     }
+
+    reviews {
+        bigint id PK
+        bigint booking_id FK
+        int rating "1-5"
+        text comment
+    }
+
+    promos {
+        bigint id PK
+        string code "Unique"
+        int discount_percentage
+        decimal max_discount
+        date valid_until
+    }
+```
 ```
 
 
