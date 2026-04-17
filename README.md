@@ -64,7 +64,69 @@ Sistem ini dirancang untuk mendigitalisasi seluruh proses operasional rental, me
 
 ## 📊 Database Schema (ERD)
 ```mermaid
+erDiagram
+    users ||--o{ bookings : "melakukan"
+    vehicles ||--o{ bookings : "disewa dalam"
+    drivers ||--o{ bookings : "ditugaskan pada"
+    zones ||--o{ bookings : "lokasi jemput/kembali"
+    bookings ||--|| payments : "memiliki"
+    bookings ||--o| reviews : "mendapat"
 
+    users {
+        bigint id PK
+        string google_id "Nullable"
+        string name
+        string email "Unique"
+        string password "Hashed"
+        string phone_number
+        enum role "'admin', 'customer'"
+    }
+
+    vehicles {
+        bigint id PK
+        string name
+        enum type "'SUV', 'MPV', dll"
+        decimal price_per_day
+        int seats
+        int luggage_capacity
+        enum status
+    }
+
+    zones {
+        bigint id PK
+        string zone_name
+        decimal additional_cost
+    }
+
+    drivers {
+        bigint id PK
+        string name
+        string phone
+        decimal daily_rate
+        enum status
+    }
+
+    bookings {
+        bigint id PK
+        string booking_code "Unique"
+        bigint user_id FK
+        bigint vehicle_id FK
+        bigint driver_id FK "Nullable"
+        bigint pickup_zone_id FK
+        bigint dropoff_zone_id FK
+        datetime start_date
+        datetime end_date
+        decimal total_price
+        enum status
+    }
+
+    payments {
+        bigint id PK
+        bigint booking_id FK
+        string transaction_id
+        string transaction_status
+        decimal gross_amount
+    }
 ```
 
 
