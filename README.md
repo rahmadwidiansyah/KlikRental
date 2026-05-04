@@ -1,187 +1,58 @@
-# KlikRental - Sistem Informasi Manajemen Rental Kendaraan 🚗
+<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
-[![Laravel Version](https://img.shields.io/badge/laravel-v13.x-red.svg)](https://laravel.com/)
-[![Docker Sail](https://img.shields.io/badge/docker-sail-blue.svg?logo=docker)](https://laravel.com/docs/11.x/sail)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+<p align="center">
+<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+</p>
 
-**KlikRental** adalah platform manajemen persewaan kendaraan berbasis web yang dirancang untuk mendigitalisasi operasional UMKM rental. Sistem ini menggunakan **Laravel 13** dengan arsitektur modern untuk menangani fitur-fitur kompleks seperti otomasi pengingat, pembayaran digital, dan kalkulasi harga dinamis.
+## About Laravel
 
----
+Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
 
-## 📑 Software Requirements Specification (SRS)
+- [Simple, fast routing engine](https://laravel.com/docs/routing).
+- [Powerful dependency injection container](https://laravel.com/docs/container).
+- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
+- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
+- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
+- [Robust background job processing](https://laravel.com/docs/queues).
+- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
 
-### 1. Latar Belakang Sistem
-Saat ini, banyak UMKM di bidang rental kendaraan masih mengelola kegiatan operasionalnya secara manual (buku/Excel) dan via pesan WhatsApp. Metode manual ini sering kali menimbulkan berbagai kendala operasional, seperti risiko hilangnya data pelanggan, bentrok jadwal sewa (*double-booking*), kesulitan dalam mengkalkulasi tarif tambahan (supir/zona), hingga rentannya *human error* dalam pengelolaan data.
+Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
-### 2. Tujuan Pengembangan
-Sistem ini dirancang untuk mendigitalisasi seluruh proses operasional rental, meliputi:
-- Memfasilitasi proses pemesanan (*booking*) kendaraan secara *online* dan *real-time*.
-- Mengotomatisasi kalkulasi biaya sewa, termasuk opsi tambahan (layanan supir dan biaya zona lokasi).
-- Mengintegrasikan sistem pembayaran digital (Payment Gateway) untuk verifikasi transaksi otomatis.
-- Menerapkan sistem notifikasi dan pengingat otomatis menggunakan *workflow automation*.
+## Learning Laravel
 
-### 3. Spesifikasi Pengguna (Stakeholder)
-- **Admin (Pengelola Rental):** Memiliki hak akses penuh untuk mengelola master data kendaraan, memantau ketersediaan armada, melihat laporan, dan mengelola tarif.
-- **Pelanggan (Customer):** Pengguna publik yang dapat melihat katalog, melakukan pendaftaran/login, memilih opsi penyewaan, dan membayar mandiri.
+Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
 
-### 4. Fitur Utama Sistem
-- **Modul Katalog & Reservasi:** Menampilkan armada lengkap (jumlah *seat*, kapasitas bagasi).
-- **Dynamic Pricing & Opsi Tambahan:** Kalkulasi otomatis berdasarkan durasi, zona lokasi antar-jemput, dan supir.
-- **Payment Gateway Integration:** Pembayaran via QRIS/Virtual Account dengan verifikasi otomatis.
-- **Sistem Notifikasi Pintar (n8n):** Pengiriman WA otomatis untuk konfirmasi pembayaran dan pengingat pengembalian kendaraan pada J-2 (2 Jam sebelum waktu sewa habis).
-- **Google OAuth Login:** Fasilitas *login/register* instan menggunakan akun Google.
+In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
 
-### 5. Kebutuhan Fungsional
-| ID | Deskripsi Kebutuhan |
-| :--- | :--- |
-| **F-01** | Sistem harus menampilkan status ketersediaan armada secara *real-time*. |
-| **F-02** | Sistem menolak *booking* pada kendaraan yang jadwalnya sudah terisi (*double-booking protection*). |
-| **F-03** | Kalkulasi harga dengan rumus: `(Harga Sewa + Biaya Supir) x Durasi + Biaya Zona`. |
-| **F-04** | Mengubah status pesanan otomatis menjadi *Paid* saat menerima *webhook* Payment Gateway. |
-| **F-05** | Sistem mengirimkan notifikasi WhatsApp konfirmasi pembayaran berhasil via n8n. |
-| **F-06** | Sistem mendeteksi sisa waktu 2 Jam (J-2) dan mengirimkan WA pengingat pengembalian. |
-| **F-07** | *Dashboard* Admin untuk CRUD data armada, zona, driver, promo, dan riwayat transaksi. |
+You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
 
-### 6. Kebutuhan Non-Fungsional
-| ID | Deskripsi Kebutuhan |
-| :--- | :--- |
-| **NF-01** | **Keamanan Data:** Password dienkripsi menggunakan *Hashing* (Bcrypt). |
-| **NF-02** | **Responsivitas:** UI/UX responsif untuk perangkat Mobile dan Desktop. |
-| **NF-03** | **Environment:** Pengembangan diisolasi menggunakan Docker (Laravel Sail). |
+## Agentic Development
 
----
+Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
 
-## 🛠️ Tech Stack & Infrastructure
+```bash
+composer require laravel/boost --dev
 
-- **Framework:** Laravel 13 (PHP 8.2+)
-- **Database:** MySQL
-- **Frontend:** Laravel Blade, Tailwind CSS / Bootstrap
-- **Automation:** n8n Workflow Automation
-- **Payment Gateway:** Midtrans (Sandbox Environment)
-- **Environment:** Docker via **Laravel Sail**
-
----
-
-## 📊 Database Schema (ERD)
-```mermaid
-erDiagram
-    users ||--o{ bookings : "melakukan"
-    vehicles ||--o{ bookings : "disewa dalam"
-    drivers ||--o{ bookings : "ditugaskan pada"
-    zones ||--o{ bookings : "lokasi jemput"
-    zones ||--o{ bookings : "lokasi kembali"
-    bookings ||--|| payments : "memiliki"
-    bookings ||--o| reviews : "mendapat"
-
-    users {
-        bigint id PK
-        string google_id "Nullable"
-        string name
-        string email "Unique"
-        string password "Hashed"
-        string phone_number
-        enum role "'admin', 'customer'"
-    }
-
-    vehicles {
-        bigint id PK
-        string name
-        enum type "'SUV', 'MPV', dll"
-        enum transmission
-        string fuel_type
-        int seats
-        int luggage_capacity
-        decimal price_per_day
-        enum status
-        string image_url
-    }
-
-    zones {
-        bigint id PK
-        string zone_name
-        decimal additional_cost
-    }
-
-    drivers {
-        bigint id PK
-        string name
-        string phone
-        decimal daily_rate
-        enum status
-    }
-
-    bookings {
-        bigint id PK
-        string booking_code "Unique"
-        bigint user_id FK
-        bigint vehicle_id FK
-        bigint driver_id FK "Nullable"
-        bigint pickup_zone_id FK
-        bigint dropoff_zone_id FK
-        datetime start_date
-        datetime end_date
-        decimal total_price
-        enum status
-    }
-
-    payments {
-        bigint id PK
-        bigint booking_id FK
-        string transaction_id "Dari Midtrans"
-        string payment_type
-        decimal gross_amount
-        string transaction_status
-        datetime settlement_time
-    }
-
-    reviews {
-        bigint id PK
-        bigint booking_id FK
-        int rating "1-5"
-        text comment
-    }
-
-    promos {
-        bigint id PK
-        string code "Unique"
-        int discount_percentage
-        decimal max_discount
-        date valid_until
-    }
+php artisan boost:install
 ```
 
+Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
 
+## Contributing
 
-## 🤝 Strategi Kontribusi (Git Flow)
+Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
 
-Untuk menjaga kualitas kode, seluruh anggota tim wajib mengikuti aturan berikut:
+## Code of Conduct
 
-1.  **Main Branch:** Hanya untuk kode yang sudah stabil dan siap dinilai (Protected).
-2.  **Feature Branch:** Setiap pengerjaan tugas baru wajib membuat cabang dengan format:
-      - `feat/nama-fitur` (Contoh: `feat/login-google`)
-      - `ui/nama-halaman` (Contoh: `ui/katalog-mobil`)
-      - `fix/nama-bug` (Contoh: `fix/kalkulasi-denda`)
-3.  **Pull Request (PR):** Penggabungan ke `main` harus melalui proses Review oleh Project Manager.
-4.  **Conventional Commits:** Gunakan prefix pada pesan commit:
-      - `feat:` Fitur baru
-      - `fix:` Perbaikan bug
-      - `ui:` Perubahan tampilan
-      - `docs:` Update dokumentasi/README
-      - `chore:` Maintenance atau update library
+In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
 
----
+## Security Vulnerabilities
 
-## 👥 Tim Pengembang (Kelompok 6)
+If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
 
-**Dosen Pengampu:** 👩‍🏫 **Maya Utami Dewi, S.Kom, M.Kom**
+## License
 
-| Nama Lengkap | NIM | Peran (Role) |
-| :--- | :--- | :--- |
-| **Rahmad Widiansyah** | 1123110089 | Project Manager & System Analyst |
-| **Ilham Puji Wira Pratama** | 1123110086 | Frontend Developer |
-| **Iqbal Hamdani** | 1123110040 | UI/UX Designer |
-| **Fengki Andriansyah** | 1123110070 | Backend Developer |
-
----
-
-Copyright © 2026 - Kelompok 6 KlikRental
+The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
