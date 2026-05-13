@@ -1,10 +1,18 @@
-# KlikRental - Sistem Informasi Manajemen Rental Kendaraan 🚗
+# 🚗 KlikRental - Sistem Informasi Manajemen Rental Kendaraan
 
 [![Laravel Version](https://img.shields.io/badge/laravel-v13.x-red.svg)](https://laravel.com/)
-[![Docker Sail](https://img.shields.io/badge/docker-sail-blue.svg?logo=docker)](https://laravel.com/docs/11.x/sail)
+[![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?logo=docker&logoColor=white)](https://www.docker.com/)
+[![CI/CD n8n](https://img.shields.io/badge/CI%2FCD-n8n-ea4b71.svg?logo=n8n&logoColor=white)](https://n8n.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 **KlikRental** adalah platform manajemen persewaan kendaraan berbasis web yang dirancang untuk mendigitalisasi operasional UMKM rental. Sistem ini menggunakan **Laravel 13** dengan arsitektur modern untuk menangani fitur-fitur kompleks seperti otomasi pengingat, pembayaran digital, dan kalkulasi harga dinamis.
+
+---
+
+## 🌐 Live Demo & Deployment
+Sistem ini telah di-deploy ke server produksi dan diperbarui secara otomatis menggunakan pipeline CI/CD (Continuous Integration / Continuous Deployment).
+
+👉 **[Coba KlikRental Live Demo!](https://klikrental.widihhh.my.id/)**
 
 ---
 
@@ -47,18 +55,53 @@ Sistem ini dirancang untuk mendigitalisasi seluruh proses operasional rental, me
 | :--- | :--- |
 | **NF-01** | **Keamanan Data:** Password dienkripsi menggunakan *Hashing* (Bcrypt). |
 | **NF-02** | **Responsivitas:** UI/UX responsif untuk perangkat Mobile dan Desktop. |
-| **NF-03** | **Environment:** Pengembangan diisolasi menggunakan Docker (Laravel Sail). |
+| **NF-03** | **Environment & CI/CD:** Sistem di-hosting menggunakan *Custom Docker* di CasaOS dengan pipeline integrasi *Webhook* n8n untuk *auto-deployment*. |
 
 ---
 
 ## 🛠️ Tech Stack & Infrastructure
 
-- **Framework:** Laravel 13 (PHP 8.2+)
-- **Database:** MySQL
-- **Frontend:** Laravel Blade, Tailwind CSS / Bootstrap
-- **Automation:** n8n Workflow Automation
+- **Framework:** Laravel 13 (PHP 8.4 FPM)
+- **Database:** MySQL 8.0
+- **Frontend:** Laravel Blade, Tailwind CSS / Bootstrap, Vite
+- **Automation & CI/CD:** n8n Workflow Automation (Auto-Deploy via GitHub Webhooks)
 - **Payment Gateway:** Midtrans (Sandbox Environment)
-- **Environment:** Docker via **Laravel Sail**
+- **Infrastructure:** Docker Compose (App, Nginx, DB) on CasaOS
+
+---
+
+## 🚀 Progres Pembaruan Terbaru (Fase Customer & Booking Engine)
+
+### 1. Pembaruan Struktur Database (Migration & Model)
+- **Tabel `users` (Manajemen Profil & Identitas):**
+  - Menambahkan field `nik` (16 digit, unique).
+  - Menambahkan field `address` (text).
+  - Menambahkan field `ktp_image_url` dan `sim_image_url` untuk keamanan operasional rental.
+  - Implementasi PHP Attributes `#[Fillable]` ala Laravel 13 pada model User.
+- **Tabel `vehicle_images` (Sistem Galeri Foto):**
+  - Membuat tabel baru untuk mendukung relasi *One-to-Many* dengan tabel `vehicles`.
+  - Memungkinkan satu mobil memiliki banyak foto (Thumbnail Utama & Galeri).
+
+### 2. Fitur Pelanggan (Customer Journey)
+- **Katalog Mobil (`/dashboard`):**
+  - Menampilkan daftar mobil yang berstatus *available*.
+  - Menampilkan gambar *thumbnail* utama dan deretan galeri foto untuk setiap mobil (menggunakan relasi `primaryImage` dan `images`).
+- **Navigasi Dinamis:**
+  - Pembaruan *Navbar* bawaan Breeze menjadi lebih ramah pelanggan dengan menu **Katalog Mobil** dan **Riwayat Pesanan**.
+- **Manajemen Profil Kelengkapan Identitas:**
+  - Form edit profil (`/profile`) kini mendukung *upload* file (KTP & SIM) beserta pengisian NIK dan Alamat lengkap menggunakan disk `public/storage`.
+
+### 3. Core Engine: Form Booking & Kalkulasi Harga Real-Time
+- **Live Calculation (AJAX/Fetch API):**
+  - Perhitungan harga sewa otomatis tanpa perlu *refresh* halaman di halaman `booking.create`.
+  - Harga dipecah secara transparan: **Harga Mobil**, **Jasa Supir** (opsional), **Biaya Zona Jemput**, dan **Biaya Zona Kembali**.
+- **Sistem Diskon & Promo:**
+  - Validasi kode promo secara *real-time*.
+  - Memotong harga secara otomatis sesuai dengan persentase diskon (`discount_percentage`) dan dibatasi oleh nilai maksimum diskon (`max_discount`).
+- **Invoice & Struk Tagihan (`/booking/{code}/detail`):**
+  - Halaman rincian pesanan eksklusif untuk pelanggan.
+  - Menampilkan status pesanan (Pending/Paid) dan total tagihan akhir.
+  - Placeholder tombol **"Bayar Sekarang"** telah disiapkan untuk integrasi Payment Gateway.
 
 ---
 
@@ -67,11 +110,13 @@ Sistem ini dirancang untuk mendigitalisasi seluruh proses operasional rental, me
 erDiagram
     users ||--o{ bookings : "melakukan"
     vehicles ||--o{ bookings : "disewa dalam"
+    vehicles ||--o{ vehicle_images : "memiliki galeri foto"
     drivers ||--o{ bookings : "ditugaskan pada"
     zones ||--o{ bookings : "lokasi jemput"
     zones ||--o{ bookings : "lokasi kembali"
     bookings ||--|| payments : "memiliki"
     bookings ||--o| reviews : "mendapat"
+    promos ||--o{ bookings : "digunakan dalam"
 
     users {
         bigint id PK
@@ -80,6 +125,10 @@ erDiagram
         string email "Unique"
         string password "Hashed"
         string phone_number
+        string nik "16 digit, Nullable"
+        text address "Nullable"
+        string ktp_image_url "Nullable"
+        string sim_image_url "Nullable"
         enum role "'admin', 'customer'"
     }
 
@@ -93,7 +142,13 @@ erDiagram
         int luggage_capacity
         decimal price_per_day
         enum status
+    }
+
+    vehicle_images {
+        bigint id PK
+        bigint vehicle_id FK
         string image_url
+        boolean is_primary
     }
 
     zones {
@@ -118,6 +173,7 @@ erDiagram
         bigint driver_id FK "Nullable"
         bigint pickup_zone_id FK
         bigint dropoff_zone_id FK
+        bigint promo_id FK "Nullable" 
         datetime start_date
         datetime end_date
         decimal total_price
