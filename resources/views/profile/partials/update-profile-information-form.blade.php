@@ -13,7 +13,8 @@
         @csrf
     </form>
 
-    <form method="post" action="{{ route('profile.update') }}" class="mt-6 space-y-6">
+    <!-- Tambahkan enctype="multipart/form-data" di form ini -->
+    <form method="post" action="{{ route('profile.update') }}" class="mt-6 space-y-6" enctype="multipart/form-data">
         @csrf
         @method('patch')
 
@@ -45,6 +46,40 @@
                     @endif
                 </div>
             @endif
+        </div>
+
+        <!-- NEW FIELD: NIK -->
+        <div>
+            <x-input-label for="nik" :value="__('NIK (Sesuai KTP)')" />
+            <x-text-input id="nik" name="nik" type="text" class="mt-1 block w-full" :value="old('nik', $user->nik)" autocomplete="nik" />
+            <x-input-error class="mt-2" :messages="$errors->get('nik')" />
+        </div>
+
+        <!-- NEW FIELD: Alamat -->
+        <div>
+            <x-input-label for="address" :value="__('Alamat Lengkap')" />
+            <textarea id="address" name="address" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">{{ old('address', $user->address) }}</textarea>
+            <x-input-error class="mt-2" :messages="$errors->get('address')" />
+        </div>
+
+        <!-- NEW FIELD: KTP -->
+        <div>
+            <x-input-label for="ktp_image" :value="__('Foto KTP')" />
+            @if($user->ktp_image_url)
+                <img src="{{ asset('storage/' . $user->ktp_image_url) }}" class="w-32 h-20 object-cover mt-2 mb-2 rounded border">
+            @endif
+            <input id="ktp_image" name="ktp_image" type="file" class="mt-1 block w-full text-sm text-gray-600" />
+            <x-input-error class="mt-2" :messages="$errors->get('ktp_image')" />
+        </div>
+
+        <!-- NEW FIELD: SIM -->
+        <div>
+            <x-input-label for="sim_image" :value="__('Foto SIM A (Wajib untuk Lepas Kunci)')" />
+            @if($user->sim_image_url)
+                <img src="{{ asset('storage/' . $user->sim_image_url) }}" class="w-32 h-20 object-cover mt-2 mb-2 rounded border">
+            @endif
+            <input id="sim_image" name="sim_image" type="file" class="mt-1 block w-full text-sm text-gray-600" />
+            <x-input-error class="mt-2" :messages="$errors->get('sim_image')" />
         </div>
 
         <div class="flex items-center gap-4">
