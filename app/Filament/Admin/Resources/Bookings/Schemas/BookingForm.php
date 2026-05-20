@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\Bookings\Schemas;
+namespace App\Filament\Admin\Resources\Bookings\Schemas;
 
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\TextInput;
