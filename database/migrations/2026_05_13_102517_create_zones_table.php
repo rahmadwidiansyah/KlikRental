@@ -14,7 +14,9 @@ public function up(): void
     Schema::create('zones', function (Blueprint $table) {
         $table->id();
         $table->string('zone_name');
-        $table->decimal('additional_cost', 12, 2);
+        $table->decimal('additional_cost', 12, 2)->default(0);
+        $table->boolean('is_active')->default(true); // True = Normal, False = Banjir/Tutup
+        
         $table->timestamps();
     });
 }

@@ -16,16 +16,16 @@ class BookingController extends Controller
 {
     public function create(Vehicle $vehicle)
     {
-        $zones = Zone::all();
+  
+        $zones = Zone::where('is_active', true)->get();
         $drivers = Driver::where('status', 'available')->get();
 
         return view('booking.create', compact('vehicle', 'zones', 'drivers'));
     }
 
-
     public function store(Request $request)
     {
-        // 1. Validasi Input
+
         $request->validate([
             'vehicle_id' => 'required|exists:vehicles,id',
             'start_date' => 'required|date|after_or_equal:today',
@@ -36,13 +36,10 @@ class BookingController extends Controller
             'promo_code' => 'nullable|string'
         ]);
 
-        // 2. Hitung Durasi (Pembulatan ke atas, misal 26 jam dihitung 2 hari)
         $start = Carbon::parse($request->start_date);
         $end = Carbon::parse($request->end_date);
         $durationHours = $start->diffInHours($end);
-        $durationDays = ceil($durationHours / 24) ?: 1; // Minimal 1 hari sewa
-
-        // 3. Ambil Data Master dari Database
+        $durationDays = ceil($durationHours / 24) ?: 1; 
         $vehicle = Vehicle::findOrFail($request->vehicle_id);
         $pickupZone = Zone::findOrFail($request->pickup_zone_id);
         $dropoffZone = Zone::findOrFail($request->dropoff_zone_id);
@@ -53,35 +50,41 @@ class BookingController extends Controller
             $driverRate = $driver->daily_rate;
         }
 
-        // 4. Terapkan Rumus Kalkulasi Harga Dasar
         $basePrice = ($vehicle->price_per_day + $driverRate) * $durationDays;
-        $totalPrice = $basePrice + $pickupZone->additional_cost + $dropoffZone->additional_cost;
+        $subtotal = $basePrice + $pickupZone->additional_cost + $dropoffZone->additional_cost;
 
-        // 5. Cek & Terapkan Promo (Jika ada)
+        
         $promoId = null;
+        $discountAmount = 0;
+
         if ($request->promo_code) {
             $promo = Promo::where('code', $request->promo_code)
                 ->where('valid_until', '>=', now())
                 ->first();
 
             if ($promo) {
-                // Hitung diskon persentase
-                $discount = ($promo->discount_percentage / 100) * $totalPrice;
+               
+                $discountAmount = ($promo->discount_percentage / 100) * $subtotal;
 
-                // Batasi diskon jika melebihi max_discount
-                if ($discount > $promo->max_discount) {
-                    $discount = $promo->max_discount;
+              
+                if ($discountAmount > $promo->max_discount) {
+                    $discountAmount = $promo->max_discount;
                 }
 
-                $totalPrice -= $discount;
                 $promoId = $promo->id;
             }
         }
 
-        // 6. Generate Kode Booking Unik (Contoh: KR-AB12CD-171500000)
+        
+        $priceAfterPromo = $subtotal - $discountAmount;
+        $taxRate = 11; // PPN 11%
+        $taxAmount = $priceAfterPromo * ($taxRate / 100);
+        $totalPrice = $priceAfterPromo + $taxAmount;
+
+        
         $bookingCode = 'KR-' . strtoupper(Str::random(6)) . '-' . time();
 
-        // 7. Simpan ke Database
+       
         Booking::create([
             'booking_code' => $bookingCode,
             'user_id' => Auth::id(),
@@ -92,11 +95,17 @@ class BookingController extends Controller
             'promo_id' => $promoId,
             'start_date' => $start,
             'end_date' => $end,
+            
+           
+            'subtotal' => $subtotal,
+            'tax_rate' => $taxRate,
+            'tax_amount' => $taxAmount,
             'total_price' => $totalPrice,
-            'status' => 'pending' // Status awal pending, nunggu Midtrans
+            
+            'status' => 'pending' 
         ]);
 
-        // 8. Redirect ke halaman riwayat pesanan
+        
         return redirect()->route('booking.index')->with('success', 'Pemesanan berhasil dibuat! Silakan lakukan pembayaran.');
     }
 
@@ -122,17 +131,17 @@ class BookingController extends Controller
             $dropoffZone = Zone::find($request->dropoff_zone_id);
             $driverRate = $request->driver_id ? Driver::find($request->driver_id)->daily_rate : 0;
 
-            // PECAH KALKULASI MOBIL DAN SUPIR
+            
             $vehicleCost = $vehicle->price_per_day * $durationDays;
-            $driverCost = $driverRate * $durationDays; // Hitung supir per hari
+            $driverCost = $driverRate * $durationDays; 
 
             $pickupCost = $pickupZone->additional_cost;
             $dropoffCost = $dropoffZone->additional_cost;
 
-            // Total Keseluruhan
-            $totalPrice = $vehicleCost + $driverCost + $pickupCost + $dropoffCost;
+            
+            $subtotal = $vehicleCost + $driverCost + $pickupCost + $dropoffCost;
 
-            // Logic Promo
+            
             $promoValid = false;
             $promoMessage = '';
             $promoDiscount = 0;
@@ -144,15 +153,21 @@ class BookingController extends Controller
                     $promoValid = true;
                     $promoPercentage = $promo->discount_percentage;
 
-                    $discount = ($promoPercentage / 100) * $totalPrice;
+                    $discount = ($promoPercentage / 100) * $subtotal;
                     $promoDiscount = $discount > $promo->max_discount ? $promo->max_discount : $discount;
 
-                    $totalPrice -= $promoDiscount;
                     $promoMessage = "Yey! Promo {$promoPercentage}% berhasil diterapkan.";
                 } else {
                     $promoMessage = 'Yah, kode promo tidak valid atau sudah kadaluarsa.';
                 }
             }
+
+      
+            $priceAfterPromo = $subtotal - $promoDiscount;
+            $taxAmount = $priceAfterPromo * 0.11;
+            
+    
+            $totalPrice = $priceAfterPromo + $taxAmount;
 
             return response()->json([
                 'status' => 'success',
@@ -161,11 +176,18 @@ class BookingController extends Controller
                 'driver_cost' => 'Rp ' . number_format($driverCost, 0, ',', '.'),   // Harga Supir Saja
                 'pickup_cost' => 'Rp ' . number_format($pickupCost, 0, ',', '.'),
                 'dropoff_cost' => 'Rp ' . number_format($dropoffCost, 0, ',', '.'),
-                'total_price' => 'Rp ' . number_format($totalPrice, 0, ',', '.'),
+                
+                // DATA PROMO
                 'promo_valid' => $promoValid,
                 'promo_percentage' => $promoPercentage,
                 'promo_discount' => '- Rp ' . number_format($promoDiscount, 0, ',', '.'),
-                'promo_message' => $promoMessage
+                'promo_message' => $promoMessage,
+                
+                // DATA PAJAK (BARU)
+                'tax_cost' => 'Rp ' . number_format($taxAmount, 0, ',', '.'),
+                
+                // TOTAL AKHIR
+                'total_price' => 'Rp ' . number_format($totalPrice, 0, ',', '.')
             ]);
         } catch (\Exception $e) {
             return response()->json(['status' => 'error', 'message' => 'Format tanggal salah.']);

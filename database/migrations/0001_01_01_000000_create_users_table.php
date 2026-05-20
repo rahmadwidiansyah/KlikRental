@@ -22,7 +22,7 @@ return new class extends Migration
             $table->text('address')->nullable();
             $table->string('ktp_image_url')->nullable();
             $table->string('sim_image_url')->nullable();
-            $table->enum('role', ['admin', 'customer'])->default('customer');
+            $table->enum('role', ['admin', 'customer', 'staff'])->default('customer');
             $table->string('google_id')->nullable();
             $table->rememberToken();
             $table->timestamps();
