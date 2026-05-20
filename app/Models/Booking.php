@@ -8,7 +8,18 @@ use Illuminate\Database\Eloquent\Model;
 class Booking extends Model
 {
     use HasFactory;
-
+    protected $fillable = [
+        'user_id',
+        'vehicle_id',
+        'driver_id',
+        'zone_id',
+        'promo_id',
+        'start_date',
+        'end_date',
+        'total_price',
+        'payment_status',
+        'status'
+    ];
     protected $guarded = ['id'];
 
     // Relasi ke User (Customer)

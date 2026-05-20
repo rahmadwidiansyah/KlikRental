@@ -20,10 +20,8 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
     Route::get('/booking/{booking_code}/detail', [BookingController::class, 'show'])->name('booking.show');
     });
 
-// --- ROUTE ADMIN ---
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
-    Route::get('/dashboard', [HomeController::class, 'adminDashboard'])->name('admin.dashboard');
-});
+
+    
 
 // --- ROUTE PROFILE ---
 Route::middleware('auth')->group(function () {

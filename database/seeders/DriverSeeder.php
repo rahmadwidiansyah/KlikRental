@@ -8,7 +8,7 @@ class DriverSeeder extends Seeder
 {
     public function run(): void
     {
-        Driver::create(['name' => 'Budi Santoso', 'phone' => '08111222333', 'daily_rate' => 150000, 'status' => 'available']);
-        Driver::create(['name' => 'Agus Pratama', 'phone' => '08222333444', 'daily_rate' => 150000, 'status' => 'available']);
+        Driver::create(['name' => 'Budi Santoso', 'phone_number' => '08111222333', 'image_url' => null, 'daily_rate' => 150000, 'status' => 'available']);
+        Driver::create(['name' => 'Agus Pratama', 'phone_number' => '08222333444', 'image_url' => null, 'daily_rate' => 150000, 'status' => 'available']);
     }
 }

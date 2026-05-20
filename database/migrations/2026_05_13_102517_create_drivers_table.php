@@ -9,17 +9,19 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
-    {
-        Schema::create('drivers', function (Blueprint $table) {
-    $table->id();
-    $table->string('name');
-    $table->string('phone');
-    $table->decimal('daily_rate', 10, 2);
-    $table->enum('status', ['available', 'on_duty'])->default('available');
-    $table->timestamps();
-});
-    }
+public function up(): void
+{
+    Schema::create('drivers', function (Blueprint $table) {
+        $table->id();
+        $table->string('name');
+        $table->string('phone_number');
+        $table->decimal('daily_rate', 12, 2);
+        $table->string('image_url')->nullable(); 
+        
+        $table->enum('status', ['available', 'on_duty', 'inactive'])->default('available');
+        $table->timestamps();
+    });
+}
 
     /**
      * Reverse the migrations.
