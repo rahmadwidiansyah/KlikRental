@@ -1,6 +1,6 @@
 FROM php:8.4-fpm
 
-# Install dependencies sistem
+# Install dependencies sistem (Tambahkan nodejs & npm untuk build Vite)
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -8,7 +8,9 @@ RUN apt-get update && apt-get install -y \
     unzip \
     libpng-dev \
     libonig-dev \
-    libxml2-dev
+    libxml2-dev \
+    nodejs \
+    npm
 
 # Bersihkan cache apt agar image lebih ringan
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -29,18 +31,23 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www
 
 # Copy seluruh file project ke dalam container
-# (Pastikan folder public/build hasil Vite dari PC lokal ikut ter-copy)
 COPY . .
 
-# Bypass limit memori composer & jalankan instalasi
+# Build Backend (Laravel) - optimasi autoloader untuk production
 ENV COMPOSER_MEMORY_LIMIT=-1
 RUN composer install --no-dev --optimize-autoloader
 
-# Atur hak akses folder agar bisa ditulis oleh Laravel
-RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
+# Build Frontend (Vue/Inertia/Breeze) di dalam container agar konsisten
+RUN npm install
+RUN npm run build
 
 # Ekspos port 9000 untuk berkomunikasi dengan Nginx
 EXPOSE 9000
 
-# Jalankan PHP-FPM secara langsung, tanpa script tambahan yang memberatkan
-CMD ["php-fpm"]
+# Eksekusi Symlink dan Permission SAAT container start, baru jalankan php-fpm
+# Ini akan mencegah error 403 Forbidden pada gambar/file upload
+CMD sh -c "rm -rf public/storage && \
+    php artisan storage:link && \
+    chown -R www-data:www-data storage bootstrap/cache public/storage && \
+    chmod -R 775 storage bootstrap/cache public/storage && \
+    php-fpm"
