@@ -1,53 +1,65 @@
-FROM php:8.4-fpm
+FROM php:8.4-apache
 
-# Install dependencies sistem (Tambahkan nodejs & npm untuk build Vite)
+LABEL org.opencontainers.image.source=https://github.com/rahmadwidiansyah/klikrental
+
+# --- 1. Install Dependencies Sistem ---
 RUN apt-get update && apt-get install -y \
     git \
     curl \
     zip \
     unzip \
+    nodejs \
+    npm \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
-    nodejs \
-    npm
+    libicu-dev \
+    libzip-dev && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Bersihkan cache apt agar image lebih ringan
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# Install ekstensi PHP yang dibutuhkan KlikRental (MySQL)
+# --- 2. Install Ekstensi PHP (MySQL & Standar Laravel) ---
 RUN docker-php-ext-install \
     pdo_mysql \
     mbstring \
     exif \
     pcntl \
     bcmath \
-    gd
+    gd \
+    intl \
+    zip
 
-# Ambil Composer versi terbaru
+# --- 3. Konfigurasi Apache untuk Laravel ---
+ENV APACHE_DOCUMENT_ROOT /var/www/public
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf && \
+    sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf && \
+    a2enmod rewrite
+
+# --- 4. Install Composer ---
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Set working directory
 WORKDIR /var/www
-
-# Copy seluruh file project ke dalam container
 COPY . .
 
-# Build Backend (Laravel) - optimasi autoloader untuk production
+# --- 5. Build Backend ---
 ENV COMPOSER_MEMORY_LIMIT=-1
 RUN composer install --no-dev --optimize-autoloader
 
-# Build Frontend (Vue/Inertia/Breeze) di dalam container agar konsisten
+# --- 6. Build Frontend ---
 RUN npm install
 RUN npm run build
 
-# Ekspos port 9000 untuk berkomunikasi dengan Nginx
-EXPOSE 9000
+# --- 7. Laravel Optimization ---
+RUN php artisan config:cache && \
+    php artisan route:cache && \
+    php artisan view:cache
 
-# Eksekusi Symlink dan Permission SAAT container start, baru jalankan php-fpm
-# Ini akan mencegah error 403 Forbidden pada gambar/file upload
+# --- 8. Expose Port Apache ---
+EXPOSE 80
+
+# --- 9. Command Startup ---
 CMD sh -c "rm -rf public/storage && \
     php artisan storage:link && \
     chown -R www-data:www-data storage bootstrap/cache public/storage && \
     chmod -R 775 storage bootstrap/cache public/storage && \
-    php-fpm"
+    apache2-foreground"

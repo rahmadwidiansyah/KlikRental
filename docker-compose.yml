@@ -1,45 +1,35 @@
-name: klikrental
-
 services:
   # --- SERVICE DATABASE (MYSQL) ---
   db:
     image: mysql:8.0
-    container_name: klikrental_db
-    restart: always
+    container_name: klikrental_db_dev
+    restart: unless-stopped
     environment:
       MYSQL_DATABASE: ${DB_DATABASE:-klikrental}
       MYSQL_USER: ${DB_USERNAME:-sail}
       MYSQL_PASSWORD: ${DB_PASSWORD:-password}
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-password}
     ports:
-      - "3306:3306"
+      - "3306:3306" # Diekspos agar kamu bisa akses database pakai DBeaver/HeidiSQL
     volumes:
-      - db_data:/var/lib/mysql
+      - db_data_dev:/var/lib/mysql
     networks:
       - klikrental_net
 
-  # --- SERVICE LARAVEL APP (PHP-FPM 8.4 + NODEJS) ---
+  # --- SERVICE LARAVEL APP (APACHE + PHP 8.4) ---
   app:
-    build: .
-    container_name: klikrental_app
-    restart: always
-    volumes: 
-      - .:/var/www
-    networks:
-      - klikrental_net
-
-  # --- SERVICE NGINX (WEBSERVER) ---
-  nginx:
-    image: nginx:latest
-    container_name: klikrental_nginx
-    restart: always
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: klikrental_app_dev
+    restart: unless-stopped
     ports:
-      - "4050:80"
+      - "4050:80"    # Port web server lokal
+      - "5173:5173"  # Port Vite untuk Hot Module Replacement (HMR)
     volumes:
-      - .:/var/www
-      - ./docker/nginx:/etc/nginx/conf.d
+      - .:/var/www   # INI YANG PALING PENTING: Sync kodemu langsung ke container
     depends_on:
-      - app
+      - db
     networks:
       - klikrental_net
 
@@ -50,17 +40,4 @@ networks:
 
 # --- PERSISTENT STORAGE ---
 volumes:
-  db_data:
-
-# --- METADATA CASAOS ---
-x-casaos:
-  author: self
-  category: Web App
-  hostname: ""
-  icon:
-  index: /
-  is_uncontrolled: false
-  port_map: "8080"
-  scheme: http
-  title:
-    custom: Klikrental
+  db_data_dev:

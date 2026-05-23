@@ -1,54 +1,54 @@
-<nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
-    <!-- Primary Navigation Menu -->
+<nav x-data="{ open: false, scrolled: false }" 
+     @scroll.window="scrolled = (window.pageYOffset > 10)"
+     :class="scrolled ? 'bg-surface/95 shadow-md py-1' : 'bg-surface/80 py-2'"
+     class="fixed top-0 w-full z-50 backdrop-blur-xl border-b border-outline-variant/30 transition-all duration-300">
+     
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-            <div class="flex">
-                <!-- Logo -->
-                <div class="shrink-0 flex items-center">
-                    <a href="{{ route('dashboard') }}">
-                        <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
-                    </a>
-                </div>
+        <div class="flex justify-between items-center h-14"> <!-- Height navbar di perkecil ke h-14 -->
+            
+            <div class="flex items-center gap-8">
+                <a href="{{ route('dashboard') }}" class="shrink-0">
+                    <span class="font-montserrat text-xl font-bold text-primary">KlikRental</span>
+                </a>
 
-                <!-- Navigation Links (DESKTOP) -->
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                        {{ __('Katalog Mobil') }}
-                    </x-nav-link>
-                    
-                    <x-nav-link :href="route('booking.index')" :active="request()->routeIs('booking.index')">
-                        {{ __('Riwayat Pesanan') }}
-                    </x-nav-link>
+                <div class="hidden lg:flex items-center space-x-5">
+                    <a href="{{ route('dashboard') }}" class="nav-link-hover font-inter font-semibold text-[13px] {{ request()->routeIs('dashboard') ? 'text-primary active' : 'text-on-surface-variant hover:text-primary' }} transition-colors py-1">
+                        Katalog Armada
+                    </a>
+                    <a href="{{ route('booking.index') }}" class="nav-link-hover font-inter font-semibold text-[13px] {{ request()->routeIs('booking.index') ? 'text-primary active' : 'text-on-surface-variant hover:text-primary' }} transition-colors py-1">
+                        Riwayat Pesanan
+                    </a>
+                    <a href="#" class="nav-link-hover font-inter font-semibold text-[13px] text-on-surface-variant hover:text-primary transition-colors py-1">
+                        Driver Kami
+                    </a>
+                    <a href="#" class="nav-link-hover font-inter font-semibold text-[13px] text-on-surface-variant hover:text-primary transition-colors py-1">
+                        Tentang Perusahaan
+                    </a>
+                    <a href="#" class="nav-link-hover font-inter font-semibold text-[13px] text-on-surface-variant hover:text-primary transition-colors py-1">
+                        Layanan CS
+                    </a>
                 </div>
             </div>
 
-            <!-- Settings Dropdown -->
-            <div class="hidden sm:flex sm:items-center sm:ms-6">
+            <div class="hidden lg:flex sm:items-center">
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
-                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
-                            <div>{{ Auth::user()->name }}</div>
-
+                        <button class="inline-flex items-center px-3 py-1.5 border border-primary/20 rounded-lg text-[13px] font-semibold font-inter text-primary bg-primary/5 hover:bg-primary/10 transition ease-in-out duration-150">
+                            <div>{{ explode(' ', Auth::user()->name)[0] }}</div>
                             <div class="ms-1">
-                                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                </svg>
+                                <span class="material-symbols-outlined text-[18px]">expand_more</span>
                             </div>
                         </button>
                     </x-slot>
 
                     <x-slot name="content">
-                        <x-dropdown-link :href="route('profile.edit')">
+                        <x-dropdown-link :href="route('profile.edit')" class="font-inter text-[13px]">
                             {{ __('Profile') }}
                         </x-dropdown-link>
-
-                        <!-- Authentication -->
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
-
                             <x-dropdown-link :href="route('logout')"
-                                    onclick="event.preventDefault();
-                                                this.closest('form').submit();">
+                                    onclick="event.preventDefault(); this.closest('form').submit();" class="font-inter text-[13px] text-error">
                                 {{ __('Log Out') }}
                             </x-dropdown-link>
                         </form>
@@ -56,51 +56,33 @@
                 </x-dropdown>
             </div>
 
-            <!-- Hamburger (MOBILE MENU BUTTON) -->
-            <div class="-me-2 flex items-center sm:hidden">
-                <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out">
-                    <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                        <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                        <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+            <div class="flex items-center lg:hidden">
+                <button @click="open = ! open" class="text-primary hover:bg-primary/5 p-1.5 rounded-md transition-colors">
+                    <span class="material-symbols-outlined text-2xl" x-text="open ? 'close' : 'menu'">menu</span>
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Responsive Navigation Menu (MOBILE DROPDOWN) -->
-    <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
+    <!-- Mobile Dropdown -->
+    <div x-show="open" class="lg:hidden bg-surface border-t border-outline-variant/30 shadow-lg absolute w-full left-0">
         <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                {{ __('Katalog Mobil') }}
-            </x-responsive-nav-link>
-
-            <x-responsive-nav-link :href="route('booking.index')" :active="request()->routeIs('booking.index')">
-                {{ __('Riwayat Pesanan') }}
-            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="font-inter text-[14px] font-semibold">Katalog Armada</x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('booking.index')" :active="request()->routeIs('booking.index')" class="font-inter text-[14px] font-semibold">Riwayat Pesanan</x-responsive-nav-link>
+            <x-responsive-nav-link href="#" class="font-inter text-[14px] font-semibold">Driver Kami</x-responsive-nav-link>
+            <x-responsive-nav-link href="#" class="font-inter text-[14px] font-semibold">Tentang Perusahaan</x-responsive-nav-link>
+            <x-responsive-nav-link href="#" class="font-inter text-[14px] font-semibold">Layanan CS</x-responsive-nav-link>
         </div>
-
-        <!-- Responsive Settings Options -->
-        <div class="pt-4 pb-1 border-t border-gray-200">
+        <div class="pt-3 pb-3 border-t border-outline-variant/30 bg-surface-container">
             <div class="px-4">
-                <div class="font-medium text-base text-gray-800">{{ Auth::user()->name }}</div>
-                <div class="font-medium text-sm text-gray-500">{{ Auth::user()->email }}</div>
+                <div class="font-bold text-sm text-on-surface font-montserrat">{{ Auth::user()->name }}</div>
+                <div class="font-medium text-xs text-on-surface-variant font-inter">{{ Auth::user()->email }}</div>
             </div>
-
-            <div class="mt-3 space-y-1">
-                <x-responsive-nav-link :href="route('profile.edit')">
-                    {{ __('Profile') }}
-                </x-responsive-nav-link>
-
-                <!-- Authentication -->
+            <div class="mt-2 space-y-1">
+                <x-responsive-nav-link :href="route('profile.edit')" class="font-inter text-[14px]">Profile</x-responsive-nav-link>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
-
-                    <x-responsive-nav-link :href="route('logout')"
-                            onclick="event.preventDefault();
-                                        this.closest('form').submit();">
-                        {{ __('Log Out') }}
-                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();" class="font-inter text-[14px] text-error">Log Out</x-responsive-nav-link>
                 </form>
             </div>
         </div>
