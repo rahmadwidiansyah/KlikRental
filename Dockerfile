@@ -49,16 +49,16 @@ RUN composer install --no-dev --optimize-autoloader
 RUN npm install
 RUN npm run build
 
-# --- 7. Laravel Optimization ---
-RUN php artisan config:cache && \
-    php artisan route:cache && \
-    php artisan view:cache
+# --- 7. Laravel Optimization --- 
 
 # --- 8. Expose Port Apache ---
 EXPOSE 80
 
 # --- 9. Command Startup ---
-CMD sh -c "rm -rf public/storage && \
+CMD sh -c "php artisan config:cache && \
+    php artisan route:cache && \
+    php artisan view:cache && \
+    rm -rf public/storage && \
     php artisan storage:link && \
     chown -R www-data:www-data storage bootstrap/cache public/storage && \
     chmod -R 775 storage bootstrap/cache public/storage && \
