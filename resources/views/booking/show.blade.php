@@ -73,7 +73,6 @@
                     </div>
                     
                     @php
-                        // Hitung ulang durasi untuk ditampilkan di struk
                         $start = \Carbon\Carbon::parse($booking->start_date);
                         $end = \Carbon\Carbon::parse($booking->end_date);
                         $durationDays = ceil($start->diffInHours($end) / 24) ?: 1;
@@ -127,10 +126,11 @@
                 </div>
             </div>
 
-            <!-- Tombol Aksi -->
+            <!-- Tombol Aksi Gabungan -->
             <div class="text-center mt-8 pt-4 border-t border-outline-variant/30">
                 @if($booking->status == 'pending')
-                    <button type="button" class="w-full sm:w-auto bg-forest-green text-white font-inter font-bold text-[15px] px-8 py-3.5 rounded-xl hover:bg-forest-green/90 transition-all active:scale-95 shadow-lg shadow-forest-green/20 inline-flex items-center justify-center gap-2">
+                    <!-- Ditambahkan id="pay-button" untuk memicu javascript Snap -->
+                    <button type="button" id="pay-button" class="w-full sm:w-auto bg-forest-green text-white font-inter font-bold text-[15px] px-8 py-3.5 rounded-xl hover:bg-forest-green/90 transition-all active:scale-95 shadow-lg shadow-forest-green/20 inline-flex items-center justify-center gap-2">
                         <span class="material-symbols-outlined text-[20px]">credit_card</span>
                         Bayar Sekarang
                     </button>
@@ -148,4 +148,29 @@
 
         </div>
     </div>
+
+    <!-- SCRIPT MIDTRANS INTEGRATED -->
+    @if($booking->status == 'pending' && isset($snapToken))
+    <script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ config('midtrans.client_key') }}"></script>
+    <script type="text/javascript">
+        document.getElementById('pay-button').onclick = function () {
+            snap.pay('{{ $snapToken }}', {
+                onSuccess: function (result) {
+                    alert('Pembayaran sukses!');
+                    window.location.href = "{{ route('booking.index') }}"; 
+                },
+                onPending: function (result) {
+                    alert('Menunggu pembayaran!');
+                    window.location.reload();
+                },
+                onError: function (result) {
+                    alert('Pembayaran gagal!');
+                },
+                onClose: function () {
+                    alert('Kamu menutup popup tanpa menyelesaikan pembayaran');
+                }
+            });
+        };
+    </script>
+    @endif
 </x-app-layout>

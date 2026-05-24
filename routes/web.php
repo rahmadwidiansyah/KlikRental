@@ -4,6 +4,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProfileController; 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\MidtransController;
 
 Route::get('/', function () {
     return view('welcome'); 
@@ -21,8 +22,8 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
     });
 
 Route::get('/kendaraan/{id}', [App\Http\Controllers\HomeController::class, 'show'])->name('vehicle.show');
-    
 
+Route::post('/midtrans/callback', [MidtransController::class, 'handleNotification']);
 // --- ROUTE PROFILE ---
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
