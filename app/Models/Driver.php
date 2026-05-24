@@ -16,4 +16,13 @@ class Driver extends Model
         'image_url', 
         'status'     
     ];
+
+    public function bookings() {
+        return $this->hasMany(Booking::class);
+    }
+
+    // Relasi untuk mengambil rating melalui booking
+    public function reviews() {
+        return $this->hasManyThrough(Review::class, Booking::class);
+    }
 }
