@@ -11,6 +11,8 @@ use App\Models\Promo;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
+use Midtrans\Config;
+use Midtrans\Snap;
 
 class BookingController extends Controller
 {
@@ -23,16 +25,13 @@ class BookingController extends Controller
             ->withAvg('reviews', 'rating')
             ->get();
 
-        // MENGAMBIL JADWAL MOBIL YANG SUDAH TERBOOKING + JEDA H+2 HARI
-        // Dikirim ke frontend agar Flatpickr otomatis memblokir tanggal tersebut
         $bookedRanges = Booking::where('vehicle_id', $vehicle->id)
             ->whereNotIn('status', ['cancelled'])
-            ->where('end_date', '>=', now()->subDays(2)) // Ambil booking yang baru atau masa depan
+            ->where('end_date', '>=', now()->subDays(2))
             ->get()
             ->map(function ($booking) {
                 return [
                     'from' => Carbon::parse($booking->start_date)->format('Y-m-d H:i'),
-                    // Tambah 2 hari untuk masa jeda perawatan mobil sebelum bisa disewa lagi
                     'to' => Carbon::parse($booking->end_date)->addDays(2)->format('Y-m-d H:i') 
                 ];
             });
@@ -42,7 +41,6 @@ class BookingController extends Controller
 
     public function store(Request $request)
     {
-        // 1. Validasi Input
         $request->validate([
             'vehicle_id' => 'required|exists:vehicles,id',
             'start_date' => 'required|date|after_or_equal:today',
@@ -56,10 +54,8 @@ class BookingController extends Controller
         $start = Carbon::parse($request->start_date);
         $end = Carbon::parse($request->end_date);
 
-        // RUMUS JEDA H+2: Tanggal sewa baru dikurangi 2 hari untuk dicocokkan dengan sewa sebelumnya
         $startMinus2Days = (clone $start)->subDays(2);
 
-        // 2. FINAL BACKEND LOCK (Mencegah Double Booking + Cek Masa Jeda H+2)
         $isOverlap = Booking::where('vehicle_id', $request->vehicle_id)
             ->whereNotIn('status', ['cancelled'])
             ->where(function($q) use ($startMinus2Days, $end) {
@@ -68,10 +64,9 @@ class BookingController extends Controller
             })->exists();
 
         if ($isOverlap) {
-            return back()->with('error', 'Transaksi Ditolak: Mobil sedang disewa atau dalam masa perawatan (jeda H+2) oleh pengguna lain pada tanggal tersebut. Silakan pilih tanggal atau armada lain.');
+            return back()->with('error', 'Transaksi Ditolak: Mobil sedang disewa atau dalam masa perawatan pada tanggal tersebut.');
         }
 
-        // 3. Kalkulasi Harga
         $durationHours = $start->diffInHours($end);
         $durationDays = ceil($durationHours / 24) ?: 1; 
         
@@ -88,7 +83,6 @@ class BookingController extends Controller
         $basePrice = ($vehicle->price_per_day + $driverRate) * $durationDays;
         $subtotal = $basePrice + $pickupZone->additional_cost + $dropoffZone->additional_cost;
         
-        // 4. Promo
         $promoId = null;
         $discountAmount = 0;
 
@@ -106,15 +100,13 @@ class BookingController extends Controller
             }
         }
 
-        // 5. Pajak & Total
         $priceAfterPromo = $subtotal - $discountAmount;
-        $taxRate = 11; // PPN 11%
+        $taxRate = 11; 
         $taxAmount = $priceAfterPromo * ($taxRate / 100);
         $totalPrice = $priceAfterPromo + $taxAmount;
 
         $bookingCode = 'KR-' . strtoupper(Str::random(6)) . '-' . time();
 
-        // 6. Simpan ke Database
         Booking::create([
             'booking_code' => $bookingCode,
             'user_id' => Auth::id(),
@@ -132,7 +124,7 @@ class BookingController extends Controller
             'status' => 'pending' 
         ]);
 
-        return redirect()->route('booking.index')->with('success', 'Pemesanan berhasil dibuat! Silakan lakukan pembayaran.');
+        return redirect()->route('booking.show', $bookingCode)->with('success', 'Pemesanan berhasil dibuat!');
     }
 
     public function calculatePrice(Request $request)
@@ -149,10 +141,8 @@ class BookingController extends Controller
                 return response()->json(['status' => 'error', 'message' => 'Tanggal kembali tidak valid.']);
             }
 
-            // RUMUS JEDA H+2: Dikurangi 2 hari untuk mengecek bentrok dengan masa istirahat sewa sebelumnya
             $startMinus2Days = (clone $start)->subDays(2);
 
-            // LIVE CHECK DOUBLE BOOKING VIA AJAX (Termasuk Jeda H+2)
             $isOverlap = Booking::where('vehicle_id', $request->vehicle_id)
                 ->whereNotIn('status', ['cancelled'])
                 ->where(function($q) use ($startMinus2Days, $end) {
@@ -163,7 +153,7 @@ class BookingController extends Controller
             if ($isOverlap) {
                 return response()->json([
                     'status' => 'error', 
-                    'message' => 'Mohon maaf, mobil sudah dipesan atau sedang dalam masa perawatan (jeda H+2) pada tanggal tersebut.'
+                    'message' => 'Mohon maaf, mobil sudah dipesan.'
                 ]);
             }
 
@@ -197,9 +187,9 @@ class BookingController extends Controller
                     $discount = ($promoPercentage / 100) * $subtotal;
                     $promoDiscount = $discount > $promo->max_discount ? $promo->max_discount : $discount;
 
-                    $promoMessage = "Yey! Promo {$promoPercentage}% berhasil diterapkan.";
+                    $promoMessage = "Promo diterapkan.";
                 } else {
-                    $promoMessage = 'Yah, kode promo tidak valid atau sudah kadaluarsa.';
+                    $promoMessage = 'Kode promo tidak valid.';
                 }
             }
 
@@ -214,12 +204,10 @@ class BookingController extends Controller
                 'driver_cost' => 'Rp ' . number_format($driverCost, 0, ',', '.'),   
                 'pickup_cost' => 'Rp ' . number_format($pickupCost, 0, ',', '.'),
                 'dropoff_cost' => 'Rp ' . number_format($dropoffCost, 0, ',', '.'),
-                
                 'promo_valid' => $promoValid,
                 'promo_percentage' => $promoPercentage,
                 'promo_discount' => '- Rp ' . number_format($promoDiscount, 0, ',', '.'),
                 'promo_message' => $promoMessage,
-                
                 'tax_cost' => 'Rp ' . number_format($taxAmount, 0, ',', '.'),
                 'total_price' => 'Rp ' . number_format($totalPrice, 0, ',', '.')
             ]);
@@ -230,12 +218,46 @@ class BookingController extends Controller
 
     public function show($bookingCode)
     {
-        $booking = Booking::with(['vehicle', 'driver', 'pickupZone', 'dropoffZone', 'promo'])
+        $booking = Booking::with(['vehicle', 'driver', 'pickupZone', 'dropoffZone', 'promo', 'user'])
                           ->where('booking_code', $bookingCode)
                           ->where('user_id', Auth::id()) 
                           ->firstOrFail();
 
-        return view('booking.show', compact('booking'));
+        $snapToken = null;
+
+        if ($booking->status === 'pending') {
+            Config::$serverKey = config('midtrans.server_key');
+            Config::$isProduction = config('midtrans.is_production', false);
+            Config::$isSanitized = config('midtrans.is_sanitized', true);
+            Config::$is3ds = config('midtrans.is_3ds', true);
+
+            $params = [
+                'transaction_details' => [
+                    'order_id' => $booking->booking_code,
+                    'gross_amount' => (int) ceil($booking->total_price), 
+                ],
+                'customer_details' => [
+                    'first_name' => $booking->user->name,
+                    'email' => $booking->user->email,
+                    'phone' => $booking->user->phone ?? '081234567890',
+                ],
+                'item_details' => [
+                    [
+                        'id' => $booking->vehicle_id,
+                        'price' => (int) ceil($booking->total_price),
+                        'quantity' => 1,
+                        'name' => 'Sewa ' . $booking->vehicle->name,
+                    ]
+                ]
+            ];
+
+            try {
+                $snapToken = Snap::getSnapToken($params);
+            } catch (\Exception $e) {
+            }
+        }
+
+        return view('booking.show', compact('booking', 'snapToken'));
     }
 
     public function index()
