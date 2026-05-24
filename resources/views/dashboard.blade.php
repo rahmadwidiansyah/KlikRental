@@ -5,9 +5,12 @@
 
         <div class="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center mt-6">
 
+            <!-- Cari baris h1 Selamat Datang -->
+            @auth
             <h1 class="font-montserrat text-3xl md:text-[46px] font-bold text-white mb-4 drop-shadow-lg leading-tight">
                 Selamat Datang, {{ explode(' ', Auth::user()->name)[0] }}!
             </h1>
+            @endauth
             <p class="font-inter text-[15px] md:text-[17px] text-white/90 mb-8 max-w-2xl drop-shadow">
                 Nikmati pengalaman sewa mobil premium dengan proses verifikasi instan, ketersediaan real-time, dan dukungan 24/7.
             </p>

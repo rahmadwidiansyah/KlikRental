@@ -81,4 +81,15 @@ class HomeController extends Controller
     {
         return view('admin.dashboard');
     }
+public function welcome()
+{
+    // Ambil data kendaraan
+    $vehicles = \App\Models\Vehicle::all(); 
+    
+    // Ambil data zones agar dropdown lokasi bisa terisi
+    $zones = \App\Models\Zone::where('is_active', true)->get();
+
+    // Kirim keduanya ke view
+    return view('welcome', compact('vehicles', 'zones'));
+}
 }

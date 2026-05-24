@@ -6,9 +6,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\MidtransController;
 
-Route::get('/', function () {
-    return view('welcome'); 
-});
+Route::get('/', [HomeController::class, 'welcome'])->name('welcome');
 
 // --- ROUTE CUSTOMER ---
 Route::middleware(['auth', 'role:customer'])->group(function () {
