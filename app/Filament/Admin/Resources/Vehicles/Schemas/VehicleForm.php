@@ -31,7 +31,8 @@ class VehicleForm
                 Repeater::make('images') 
                     ->relationship() 
                     ->schema([
-                        FileUpload::make('image_path') 
+                        FileUpload::make('image_url') 
+                            ->disk('public')
                             ->image()
                             ->directory('vehicles')
                             ->required(),

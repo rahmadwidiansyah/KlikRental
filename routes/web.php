@@ -20,7 +20,7 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
     Route::get('/booking/{booking_code}/detail', [BookingController::class, 'show'])->name('booking.show');
     });
 
-
+Route::get('/kendaraan/{id}', [App\Http\Controllers\HomeController::class, 'show'])->name('vehicle.show');
     
 
 // --- ROUTE PROFILE ---
