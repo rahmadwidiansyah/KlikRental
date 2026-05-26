@@ -29,4 +29,9 @@ class Vehicle extends Model
     public function primaryImage() {
         return $this->hasOne(VehicleImage::class)->where('is_primary', true);
     }
+    // Relasi Ulasan (melalui tabel bookings)
+    public function reviews()
+    {
+        return $this->hasManyThrough(Review::class, Booking::class);
+    }
 }

@@ -230,8 +230,8 @@
                              :class="driverId === '{{ $driver->id }}' ? 'border-primary bg-primary/5' : 'border-outline-variant/40'">
                             
                             <div class="w-14 h-14 rounded-full bg-surface-container shrink-0 border border-outline-variant/50 overflow-hidden relative">
-                                <img src="{{ $driver->image_url ?? 'https://ui-avatars.com/api/?name='.urlencode($driver->name).'&background=e4dfff&color=140067' }}" class="w-full h-full object-cover">
-                                <span class="absolute bottom-0 right-1 w-3.5 h-3.5 bg-forest-green border-2 border-surface rounded-full"></span>
+                               <img src="{{ $driver->image_url ? asset('storage/' . $driver->image_url) : 'https://ui-avatars.com/api/?name='.urlencode($driver->name).'&background=e4dfff&color=140067' }}" class="w-full h-full object-cover">
+                               <span class="absolute bottom-0 right-1 w-3.5 h-3.5 bg-forest-green border-2 border-surface rounded-full"></span>
                             </div>
                             
                             <div class="flex-grow">
@@ -240,7 +240,7 @@
                                 <div class="flex items-center gap-2 mt-1 mb-1.5">
                                     <div class="flex items-center gap-1 bg-[#FFF8E7] text-[#B87503] px-1.5 py-0.5 rounded text-[10px] font-bold">
                                         <span class="material-symbols-outlined icon-fill text-[12px]">star</span>
-                                        {{ number_format($driver->reviews_avg_rating ?? 5.0, 1) }}
+                                       {{ number_format($driver->reviews_avg_driver_rating ?? 5.0, 1) }}
                                     </div>
                                     <span class="text-outline-variant/80 text-[10px]">|</span>
                                     <div class="flex items-center gap-1 text-on-surface-variant text-[11px] font-medium">

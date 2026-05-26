@@ -15,47 +15,53 @@ class BookingsTable
         return $table
             ->columns([
                 TextColumn::make('booking_code')
-                    ->searchable(),
-                TextColumn::make('user_id')
-                    ->numeric()
+                    ->label('Kode')
+                    ->searchable()
+                    ->copyable() // Bisa di-klik untuk copy kode
+                    ->weight('bold'),
+
+                TextColumn::make('user.name')
+                    ->label('Pelanggan')
+                    ->searchable()
+                    ->sortable()
+                    ->limit(20), // Biar kalau nama pelanggan panjang banget, otomatis dipotong pakai "..."
+
+                TextColumn::make('vehicle.name')
+                    ->label('Kendaraan')
+                    ->searchable()
                     ->sortable(),
-                TextColumn::make('vehicle_id')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('driver_id')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('pickup_zone_id')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('dropoff_zone_id')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('promo_id')
-                    ->numeric()
-                    ->sortable(),
+
                 TextColumn::make('start_date')
-                    ->dateTime()
-                    ->sortable(),
+                    ->label('Mulai Sewa')
+                    ->dateTime('d M Y, H:i')
+                    ->sortable()
+                    ->toggleable(),
+
                 TextColumn::make('end_date')
-                    ->dateTime()
-                    ->sortable(),
+                    ->label('Selesai Sewa')
+                    ->dateTime('d M Y, H:i')
+                    ->sortable()
+                    ->toggleable(),
+
                 TextColumn::make('total_price')
-                    ->money()
+                    ->label('Total Harga')
+                    ->money('IDR', locale: 'id') // Format langsung ke Rupiah
                     ->sortable(),
+
                 TextColumn::make('status')
-                    ->badge(),
-                TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'pending' => 'warning',
+                        'paid' => 'info',
+                        'in_use' => 'primary',
+                        'late' => 'danger',
+                        'completed' => 'success',
+                        'cancelled' => 'danger',
+                        default => 'gray',
+                    }),
             ])
             ->filters([
-                //
+                // Tambahkan filter status atau tanggal di sini nanti kalau butuh
             ])
             ->recordActions([
                 EditAction::make(),
@@ -64,6 +70,7 @@ class BookingsTable
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
-            ]);
+            ])
+            ->defaultSort('created_at', 'desc'); // Urutkan dari pesanan terbaru
     }
-}
+};

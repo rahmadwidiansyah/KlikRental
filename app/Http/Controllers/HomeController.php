@@ -6,7 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\Vehicle;
 use App\Models\Zone;
 use App\Models\Booking;
-use Carbon\Carbon; // Pastikan Carbon di-import
+use App\Models\Review; // <-- Tambahan: Import model Review
+use Carbon\Carbon;
 
 class HomeController extends Controller
 {
@@ -28,7 +29,7 @@ class HomeController extends Controller
         if ($request->filled('start_date') && $request->filled('end_date')) {
             $start_date = Carbon::parse($request->start_date);
             $end_date = Carbon::parse($request->end_date);
-            
+
             // Rumus Jeda H+2: Tanggal sewa request dikurangi 2 hari 
             // agar mobil yang baru selesai tidak langsung bisa disewa
             $startMinus2Days = (clone $start_date)->subDays(2);
@@ -52,7 +53,7 @@ class HomeController extends Controller
         if (!$request->filled('start_date')) {
             // Mundurkan 2 hari untuk mengecek mobil yang masih masa istirahat/jeda
             $todayMinus2Days = now()->subDays(2)->startOfDay();
-            
+
             $todayBookedIds = Booking::whereNotIn('status', ['cancelled'])
                 ->where('start_date', '<=', now()->endOfDay())
                 ->where('end_date', '>=', $todayMinus2Days)
@@ -65,31 +66,40 @@ class HomeController extends Controller
             }
         }
 
-        // Kirim $vehicles dan $zones ke view dashboard
-        return view('dashboard', compact('vehicles', 'zones'));
+        // 6. AMBIL DATA REVIEW UNTUK SLIDER MARQUEE
+        // Mengambil maksimal 10 ulasan terbaru lengkap dengan relasi user dan kendaraannya
+        $reviews = Review::with(['user', 'vehicle'])
+            ->whereNotNull('comment') // Hanya ambil ulasan yang ada teks komentarnya
+            ->latest()
+            ->take(10)
+            ->get();
+
+        // Kirim $vehicles, $zones, dan $reviews ke view dashboard
+        return view('dashboard', compact('vehicles', 'zones', 'reviews'));
     }
+
     // Method untuk Halaman Detail Kendaraan
     public function show($id)
     {
-        // Ambil data mobil beserta semua relasi gambarnya
-        $vehicle = Vehicle::with(['images', 'primaryImage'])->findOrFail($id);
-        
+        // Ambil data mobil beserta semua relasi gambarnya (sekalian panggil reviews jika mau ditampilkan di halaman detail)
+        $vehicle = Vehicle::with(['images', 'primaryImage', 'reviews.user'])->findOrFail($id);
+
         return view('vehicle.show', compact('vehicle'));
     }
+
     // Method untuk halaman Admin
     public function adminDashboard()
     {
         return view('admin.dashboard');
     }
-public function welcome()
-{
-    // Ambil data kendaraan
-    $vehicles = \App\Models\Vehicle::all(); 
-    
-    // Ambil data zones agar dropdown lokasi bisa terisi
-    $zones = \App\Models\Zone::where('is_active', true)->get();
 
-    // Kirim keduanya ke view
-    return view('welcome', compact('vehicles', 'zones'));
-}
+    public function welcome()
+    {
+        // Ambil data kendaraan
+        $vehicles = \App\Models\Vehicle::all();
+
+        // Ambil data zones agar dropdown lokasi bisa terisi
+        $zones = \App\Models\Zone::where('is_active', true)->get();
+        return view('dashboard', compact('vehicles', 'zones'));
+    }
 }
