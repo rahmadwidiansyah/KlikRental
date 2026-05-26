@@ -68,8 +68,7 @@ class HomeController extends Controller
 
         // 6. AMBIL DATA REVIEW UNTUK SLIDER MARQUEE
         // Mengambil maksimal 10 ulasan terbaru lengkap dengan relasi user dan kendaraannya
-        $reviews = Review::with(['user', 'vehicle'])
-            ->whereNotNull('comment') // Hanya ambil ulasan yang ada teks komentarnya
+        $reviews = Review::with(['user', 'booking.vehicle']) 
             ->latest()
             ->take(10)
             ->get();
