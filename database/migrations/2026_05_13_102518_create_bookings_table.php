@@ -9,29 +9,31 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-public function up(): void
-{
-    Schema::create('bookings', function (Blueprint $table) {
-        $table->id();
-        $table->string('booking_code')->unique();
-        $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-        $table->foreignId('vehicle_id')->constrained()->cascadeOnDelete();
-        $table->foreignId('driver_id')->nullable()->constrained()->nullOnDelete();
-        $table->foreignId('pickup_zone_id')->constrained('zones');
-        $table->foreignId('dropoff_zone_id')->constrained('zones');
-        $table->foreignId('promo_id')->nullable()->constrained()->nullOnDelete();
-        $table->dateTime('start_date');
-        $table->dateTime('end_date');
+    public function up(): void
+    {
+        Schema::create('bookings', function (Blueprint $table) {
+            $table->id();
+            $table->string('booking_code')->unique();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('vehicle_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('driver_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('pickup_zone_id')->constrained('zones');
+            $table->foreignId('dropoff_zone_id')->constrained('zones');
+            $table->foreignId('promo_id')->nullable()->constrained()->nullOnDelete();
+            $table->dateTime('start_date');
+            $table->dateTime('end_date');
 
-        $table->decimal('subtotal', 12, 2);
-        $table->integer('tax_rate')->default(11); 
-        $table->decimal('tax_amount', 12, 2); 
-        $table->decimal('total_price', 12, 2); 
-        
-        $table->enum('status', ['pending', 'paid', 'completed', 'cancelled'])->default('pending');
-        $table->timestamps();
-    });
-}
+            $table->decimal('subtotal', 12, 2);
+            $table->integer('tax_rate')->default(11);
+            $table->decimal('tax_amount', 12, 2);
+            $table->decimal('total_price', 12, 2);
+
+            // Di file migration create_bookings_table atau buat migration baru
+            $table->enum('status', ['pending', 'paid', 'in_use', 'late', 'completed', 'cancelled'])->default('pending');
+            $table->decimal('late_fee', 12, 2)->default(0);
+            $table->timestamps();
+        });
+    }
 
     /**
      * Reverse the migrations.

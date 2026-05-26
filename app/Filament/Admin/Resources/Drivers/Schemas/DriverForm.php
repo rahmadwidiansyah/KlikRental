@@ -30,6 +30,7 @@ class DriverForm
                 FileUpload::make('image_url')
                     ->label('Unggah Foto')
                     ->image()
+                    ->disk('public')
                     ->directory('drivers') 
                     ->maxSize(2048),
                     

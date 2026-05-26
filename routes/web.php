@@ -5,6 +5,8 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\MidtransController;
+use App\Http\Controllers\DriverController;
+
 
 Route::get('/', [HomeController::class, 'welcome'])->name('welcome');
 
@@ -19,8 +21,11 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
     Route::get('/booking/{booking_code}/detail', [BookingController::class, 'show'])->name('booking.show');
     });
 
-Route::get('/kendaraan/{id}', [App\Http\Controllers\HomeController::class, 'show'])->name('vehicle.show');
 
+Route::get('/driver-kami', [App\Http\Controllers\DriverController::class, 'index'])->name('driver.index');
+Route::get('/driver-kami/{id}', [App\Http\Controllers\DriverController::class, 'show'])->name('driver.show');
+Route::get('/kendaraan/{id}', [App\Http\Controllers\HomeController::class, 'show'])->name('vehicle.show');
+Route::post('/booking/{booking_code}/review', [App\Http\Controllers\BookingController::class, 'storeReview'])->name('booking.review');
 Route::post('/midtrans/callback', [MidtransController::class, 'handleNotification']);
 // --- ROUTE PROFILE ---
 Route::middleware('auth')->group(function () {

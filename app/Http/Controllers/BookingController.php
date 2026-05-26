@@ -7,6 +7,7 @@ use App\Models\Vehicle;
 use App\Models\Zone;
 use App\Models\Driver;
 use App\Models\Booking;
+use App\Models\Review;
 use App\Models\Promo;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -19,10 +20,10 @@ class BookingController extends Controller
     public function create(Vehicle $vehicle)
     {
         $zones = Zone::where('is_active', true)->get();
-        
+
         $drivers = Driver::where('status', 'available')
             ->withCount('bookings')
-            ->withAvg('reviews', 'rating')
+            ->withAvg('reviews', 'driver_rating') // <-- Ubah jadi driver_rating
             ->get();
 
         $bookedRanges = Booking::where('vehicle_id', $vehicle->id)
@@ -32,7 +33,7 @@ class BookingController extends Controller
             ->map(function ($booking) {
                 return [
                     'from' => Carbon::parse($booking->start_date)->format('Y-m-d H:i'),
-                    'to' => Carbon::parse($booking->end_date)->addDays(2)->format('Y-m-d H:i') 
+                    'to' => Carbon::parse($booking->end_date)->addDays(2)->format('Y-m-d H:i')
                 ];
             });
 
@@ -58,9 +59,9 @@ class BookingController extends Controller
 
         $isOverlap = Booking::where('vehicle_id', $request->vehicle_id)
             ->whereNotIn('status', ['cancelled'])
-            ->where(function($q) use ($startMinus2Days, $end) {
+            ->where(function ($q) use ($startMinus2Days, $end) {
                 $q->where('start_date', '<=', $end)
-                  ->where('end_date', '>=', $startMinus2Days);
+                    ->where('end_date', '>=', $startMinus2Days);
             })->exists();
 
         if ($isOverlap) {
@@ -68,8 +69,8 @@ class BookingController extends Controller
         }
 
         $durationHours = $start->diffInHours($end);
-        $durationDays = ceil($durationHours / 24) ?: 1; 
-        
+        $durationDays = ceil($durationHours / 24) ?: 1;
+
         $vehicle = Vehicle::findOrFail($request->vehicle_id);
         $pickupZone = Zone::findOrFail($request->pickup_zone_id);
         $dropoffZone = Zone::findOrFail($request->dropoff_zone_id);
@@ -82,7 +83,7 @@ class BookingController extends Controller
 
         $basePrice = ($vehicle->price_per_day + $driverRate) * $durationDays;
         $subtotal = $basePrice + $pickupZone->additional_cost + $dropoffZone->additional_cost;
-        
+
         $promoId = null;
         $discountAmount = 0;
 
@@ -101,7 +102,7 @@ class BookingController extends Controller
         }
 
         $priceAfterPromo = $subtotal - $discountAmount;
-        $taxRate = 11; 
+        $taxRate = 11;
         $taxAmount = $priceAfterPromo * ($taxRate / 100);
         $totalPrice = $priceAfterPromo + $taxAmount;
 
@@ -121,7 +122,7 @@ class BookingController extends Controller
             'tax_rate' => $taxRate,
             'tax_amount' => $taxAmount,
             'total_price' => $totalPrice,
-            'status' => 'pending' 
+            'status' => 'pending'
         ]);
 
         return redirect()->route('booking.show', $bookingCode)->with('success', 'Pemesanan berhasil dibuat!');
@@ -145,14 +146,14 @@ class BookingController extends Controller
 
             $isOverlap = Booking::where('vehicle_id', $request->vehicle_id)
                 ->whereNotIn('status', ['cancelled'])
-                ->where(function($q) use ($startMinus2Days, $end) {
+                ->where(function ($q) use ($startMinus2Days, $end) {
                     $q->where('start_date', '<=', $end)
-                      ->where('end_date', '>=', $startMinus2Days);
+                        ->where('end_date', '>=', $startMinus2Days);
                 })->exists();
 
             if ($isOverlap) {
                 return response()->json([
-                    'status' => 'error', 
+                    'status' => 'error',
                     'message' => 'Mohon maaf, mobil sudah dipesan.'
                 ]);
             }
@@ -166,7 +167,7 @@ class BookingController extends Controller
             $driverRate = $request->driver_id ? Driver::find($request->driver_id)->daily_rate : 0;
 
             $vehicleCost = $vehicle->price_per_day * $durationDays;
-            $driverCost = $driverRate * $durationDays; 
+            $driverCost = $driverRate * $durationDays;
 
             $pickupCost = $pickupZone->additional_cost;
             $dropoffCost = $dropoffZone->additional_cost;
@@ -200,8 +201,8 @@ class BookingController extends Controller
             return response()->json([
                 'status' => 'success',
                 'duration_days' => $durationDays,
-                'vehicle_cost' => 'Rp ' . number_format($vehicleCost, 0, ',', '.'), 
-                'driver_cost' => 'Rp ' . number_format($driverCost, 0, ',', '.'),   
+                'vehicle_cost' => 'Rp ' . number_format($vehicleCost, 0, ',', '.'),
+                'driver_cost' => 'Rp ' . number_format($driverCost, 0, ',', '.'),
                 'pickup_cost' => 'Rp ' . number_format($pickupCost, 0, ',', '.'),
                 'dropoff_cost' => 'Rp ' . number_format($dropoffCost, 0, ',', '.'),
                 'promo_valid' => $promoValid,
@@ -219,9 +220,9 @@ class BookingController extends Controller
     public function show($bookingCode)
     {
         $booking = Booking::with(['vehicle', 'driver', 'pickupZone', 'dropoffZone', 'promo', 'user'])
-                          ->where('booking_code', $bookingCode)
-                          ->where('user_id', Auth::id()) 
-                          ->firstOrFail();
+            ->where('booking_code', $bookingCode)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
 
         $snapToken = null;
 
@@ -234,7 +235,7 @@ class BookingController extends Controller
             $params = [
                 'transaction_details' => [
                     'order_id' => $booking->booking_code,
-                    'gross_amount' => (int) ceil($booking->total_price), 
+                    'gross_amount' => (int) ceil($booking->total_price),
                 ],
                 'customer_details' => [
                     'first_name' => $booking->user->name,
@@ -268,5 +269,41 @@ class BookingController extends Controller
             ->get();
 
         return view('booking.index', compact('bookings'));
+    }
+
+    // Tambahkan use App\Models\Review; di bagian atas controller
+
+    public function storeReview(Request $request, $bookingCode)
+    {
+        $booking = Booking::where('booking_code', $bookingCode)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
+
+        // Validasi: Hanya pesanan completed yang belum di-review yang bisa dinilai
+        if ($booking->status !== 'completed') {
+            return back()->with('error', 'Pesanan harus diselesaikan sebelum memberi ulasan.');
+        }
+
+        if ($booking->review()->exists()) {
+            return back()->with('error', 'Anda sudah memberikan ulasan untuk pesanan ini.');
+        }
+
+        $request->validate([
+            'vehicle_rating' => 'required|integer|min:1|max:5',
+            'company_rating' => 'required|integer|min:1|max:5',
+            'driver_rating' => 'nullable|integer|min:1|max:5',
+            'comment' => 'nullable|string|max:500'
+        ]);
+
+        Review::create([
+            'booking_id' => $booking->id,
+            'user_id' => Auth::id(),
+            'vehicle_rating' => $request->vehicle_rating,
+            'company_rating' => $request->company_rating,
+            'driver_rating' => $request->driver_rating,
+            'comment' => $request->comment,
+        ]);
+
+        return back()->with('success', 'Terima kasih! Ulasan Anda telah berhasil disimpan.');
     }
 }
