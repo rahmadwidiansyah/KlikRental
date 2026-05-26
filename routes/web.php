@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\MidtransController;
 use App\Http\Controllers\DriverController;
-
+use App\Http\Controllers\Auth\GoogleController;
 
 Route::get('/', [HomeController::class, 'welcome'])->name('welcome');
 
@@ -22,6 +22,8 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
     });
 
 
+Route::get('/auth/google', [GoogleController::class, 'redirectToGoogle'])->name('google.login');
+Route::get('/auth/google/callback', [GoogleController::class, 'handleGoogleCallback']);
 Route::get('/driver-kami', [App\Http\Controllers\DriverController::class, 'index'])->name('driver.index');
 Route::get('/driver-kami/{id}', [App\Http\Controllers\DriverController::class, 'show'])->name('driver.show');
 Route::get('/kendaraan/{id}', [App\Http\Controllers\HomeController::class, 'show'])->name('vehicle.show');
