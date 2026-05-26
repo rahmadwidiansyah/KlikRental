@@ -1,11 +1,10 @@
 <section>
     <header>
-        <h2 class="text-lg font-medium text-gray-900">
-            {{ __('Profile Information') }}
+        <h2 class="text-lg font-montserrat font-bold text-on-surface">
+            {{ __('Informasi Profil & Dokumen') }}
         </h2>
-
-        <p class="mt-1 text-sm text-gray-600">
-            {{ __("Update your account's profile information and email address.") }}
+        <p class="mt-1 text-sm font-inter text-on-surface-variant">
+            {{ __('Perbarui informasi data diri, alamat email, dan dokumen verifikasi Anda.') }}
         </p>
     </header>
 
@@ -13,77 +12,105 @@
         @csrf
     </form>
 
-    <!-- Tambahkan enctype="multipart/form-data" di form ini -->
     <form method="post" action="{{ route('profile.update') }}" class="mt-6 space-y-6" enctype="multipart/form-data">
         @csrf
         @method('patch')
 
-        <div>
-            <x-input-label for="name" :value="__('Name')" />
-            <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required autofocus autocomplete="name" />
-            <x-input-error class="mt-2" :messages="$errors->get('name')" />
+        <div class="flex items-center gap-6 mb-8">
+            <div class="shrink-0 relative group">
+                <img id="preview_image" class="h-20 w-20 object-cover rounded-full border-2 border-primary/20 shadow-sm" src="{{ $user->display_picture }}" alt="Foto Profil" />
+                <label for="profile_picture" class="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
+                    <span class="material-symbols-outlined text-white text-[20px]">photo_camera</span>
+                </label>
+            </div>
+            
+            <div>
+                <label for="profile_picture" class="font-inter font-semibold text-[13px] text-primary cursor-pointer hover:underline transition-colors block mb-1">
+                    Ubah Foto Profil
+                </label>
+                <input id="profile_picture" name="profile_picture" type="file" class="hidden" accept="image/*" onchange="previewImage(event)" />
+                <p class="text-[11px] text-on-surface-variant font-inter">JPG, JPEG, atau PNG. Maks 2MB.</p>
+                <x-input-error class="mt-2" :messages="$errors->get('profile_picture')" />
+            </div>
         </div>
 
-        <div>
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $user->email)" required autocomplete="username" />
-            <x-input-error class="mt-2" :messages="$errors->get('email')" />
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <x-input-label for="name" :value="__('Nama Lengkap')" class="font-inter font-semibold text-[13px]" />
+                <x-text-input id="name" name="name" type="text" class="mt-1 block w-full bg-surface border-outline-variant/60 rounded-xl focus:border-primary focus:ring-primary/20" :value="old('name', $user->name)" required autofocus autocomplete="name" />
+                <x-input-error class="mt-2" :messages="$errors->get('name')" />
+            </div>
 
-            @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
-                <div>
-                    <p class="text-sm mt-2 text-gray-800">
-                        {{ __('Your email address is unverified.') }}
+            <div>
+                <x-input-label for="email" :value="__('Email')" class="font-inter font-semibold text-[13px]" />
+                <x-text-input id="email" name="email" type="email" class="mt-1 block w-full bg-surface border-outline-variant/60 rounded-xl focus:border-primary focus:ring-primary/20" :value="old('email', $user->email)" required autocomplete="username" />
+                <x-input-error class="mt-2" :messages="$errors->get('email')" />
 
-                        <button form="send-verification" class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                            {{ __('Click here to re-send the verification email.') }}
-                        </button>
-                    </p>
-
-                    @if (session('status') === 'verification-link-sent')
-                        <p class="mt-2 font-medium text-sm text-green-600">
-                            {{ __('A new verification link has been sent to your email address.') }}
+                @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
+                    <div class="mt-2">
+                        <p class="text-[12px] text-on-surface-variant font-inter">
+                            {{ __('Alamat email Anda belum diverifikasi.') }}
+                            <button form="send-verification" class="underline text-primary hover:text-primary/80 rounded-md focus:outline-none">
+                                {{ __('Klik di sini untuk mengirim ulang email.') }}
+                            </button>
                         </p>
-                    @endif
-                </div>
-            @endif
+                    </div>
+                @endif
+            </div>
+
+            <div>
+                <x-input-label for="phone_number" :value="__('Nomor WhatsApp')" class="font-inter font-semibold text-[13px]" />
+                <x-text-input id="phone_number" name="phone_number" type="text" class="mt-1 block w-full bg-surface border-outline-variant/60 rounded-xl focus:border-primary focus:ring-primary/20" :value="old('phone_number', $user->phone_number)" placeholder="08..." />
+                <x-input-error class="mt-2" :messages="$errors->get('phone_number')" />
+            </div>
+
+            <div>
+                <x-input-label for="nik" :value="__('NIK (Nomor Induk Kependudukan)')" class="font-inter font-semibold text-[13px]" />
+                <x-text-input id="nik" name="nik" type="text" class="mt-1 block w-full bg-surface border-outline-variant/60 rounded-xl focus:border-primary focus:ring-primary/20" :value="old('nik', $user->nik)" placeholder="16 digit angka" />
+                <x-input-error class="mt-2" :messages="$errors->get('nik')" />
+            </div>
         </div>
 
-        <!-- NEW FIELD: NIK -->
         <div>
-            <x-input-label for="nik" :value="__('NIK (Sesuai KTP)')" />
-            <x-text-input id="nik" name="nik" type="text" class="mt-1 block w-full" :value="old('nik', $user->nik)" autocomplete="nik" />
-            <x-input-error class="mt-2" :messages="$errors->get('nik')" />
-        </div>
-
-        <!-- NEW FIELD: Alamat -->
-        <div>
-            <x-input-label for="address" :value="__('Alamat Lengkap')" />
-            <textarea id="address" name="address" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">{{ old('address', $user->address) }}</textarea>
+            <x-input-label for="address" :value="__('Alamat Lengkap')" class="font-inter font-semibold text-[13px]" />
+            <textarea id="address" name="address" rows="3" class="mt-1 block w-full bg-surface border-outline-variant/60 rounded-xl focus:border-primary focus:ring-primary/20" placeholder="Alamat domisili saat ini...">{{ old('address', $user->address) }}</textarea>
             <x-input-error class="mt-2" :messages="$errors->get('address')" />
         </div>
 
-        <!-- NEW FIELD: KTP -->
-        <div>
-            <x-input-label for="ktp_image" :value="__('Foto KTP')" />
-            @if($user->ktp_image_url)
-                <img src="{{ asset('storage/' . $user->ktp_image_url) }}" class="w-32 h-20 object-cover mt-2 mb-2 rounded border">
-            @endif
-            <input id="ktp_image" name="ktp_image" type="file" class="mt-1 block w-full text-sm text-gray-600" />
-            <x-input-error class="mt-2" :messages="$errors->get('ktp_image')" />
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-outline-variant/30">
+            <div class="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/40">
+                <x-input-label for="ktp_image" :value="__('Upload Foto KTP')" class="font-inter font-bold text-[13px] mb-2" />
+                
+                @if($user->ktp_image_url)
+                    <div class="mb-3 flex items-center gap-1.5 text-forest-green bg-forest-light px-3 py-1.5 rounded-lg border border-forest-green/20 w-fit">
+                        <span class="material-symbols-outlined text-[16px]">check_circle</span>
+                        <span class="text-[11px] font-semibold">KTP Tersimpan</span>
+                    </div>
+                @endif
+                
+                <input id="ktp_image" name="ktp_image" type="file" class="block w-full text-sm text-on-surface-variant file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer" accept="image/*" />
+                <x-input-error class="mt-2" :messages="$errors->get('ktp_image')" />
+            </div>
+
+            <div class="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/40">
+                <x-input-label for="sim_image" :value="__('Upload Foto SIM')" class="font-inter font-bold text-[13px] mb-2" />
+                
+                @if($user->sim_image_url)
+                    <div class="mb-3 flex items-center gap-1.5 text-forest-green bg-forest-light px-3 py-1.5 rounded-lg border border-forest-green/20 w-fit">
+                        <span class="material-symbols-outlined text-[16px]">check_circle</span>
+                        <span class="text-[11px] font-semibold">SIM Tersimpan</span>
+                    </div>
+                @endif
+
+                <input id="sim_image" name="sim_image" type="file" class="block w-full text-sm text-on-surface-variant file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer" accept="image/*" />
+                <x-input-error class="mt-2" :messages="$errors->get('sim_image')" />
+            </div>
         </div>
 
-        <!-- NEW FIELD: SIM -->
-        <div>
-            <x-input-label for="sim_image" :value="__('Foto SIM A (Wajib untuk Lepas Kunci)')" />
-            @if($user->sim_image_url)
-                <img src="{{ asset('storage/' . $user->sim_image_url) }}" class="w-32 h-20 object-cover mt-2 mb-2 rounded border">
-            @endif
-            <input id="sim_image" name="sim_image" type="file" class="mt-1 block w-full text-sm text-gray-600" />
-            <x-input-error class="mt-2" :messages="$errors->get('sim_image')" />
-        </div>
-
-        <div class="flex items-center gap-4">
-            <x-primary-button>{{ __('Save') }}</x-primary-button>
+        <div class="flex items-center gap-4 pt-4 border-t border-outline-variant/30">
+            <button type="submit" class="bg-primary text-[#FFFFFF] font-montserrat font-bold text-[13px] py-2.5 px-6 rounded-xl hover:bg-primary/90 transition-all active:scale-95 shadow-lg shadow-primary/20 border border-transparent">
+                {{ __('Simpan Perubahan') }}
+            </button>
 
             @if (session('status') === 'profile-updated')
                 <p
@@ -91,9 +118,23 @@
                     x-show="show"
                     x-transition
                     x-init="setTimeout(() => show = false, 2000)"
-                    class="text-sm text-gray-600"
-                >{{ __('Saved.') }}</p>
+                    class="text-[13px] text-forest-green font-inter font-bold flex items-center gap-1.5"
+                >
+                    <span class="material-symbols-outlined text-[18px]">check_circle</span>
+                    {{ __('Tersimpan.') }}
+                </p>
             @endif
         </div>
     </form>
 </section>
+
+<script>
+    function previewImage(event) {
+        var reader = new FileReader();
+        reader.onload = function(){
+            var output = document.getElementById('preview_image');
+            output.src = reader.result;
+        };
+        reader.readAsDataURL(event.target.files[0]);
+    }
+</script>

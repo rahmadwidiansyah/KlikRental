@@ -46,6 +46,17 @@ class ProfileController extends Controller
             $data['sim_image_url'] = $request->file('sim_image')->store('identitas/sim', 'public');
         }
 
+        // Logika upload Foto Profil (Avatar)
+        if ($request->hasFile('profile_picture')) {
+            // Hapus foto lama jika ada, dan pastikan itu bukan link dari Google
+            if ($user->avatar && !filter_var($user->avatar, FILTER_VALIDATE_URL)) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+            
+            // Simpan file, lalu masukkan path-nya ke array key 'avatar' (sesuai database)
+            $data['avatar'] = $request->file('profile_picture')->store('profile-pictures', 'public');
+        }
+
         $user->fill($data);
 
         if ($user->isDirty('email')) {
