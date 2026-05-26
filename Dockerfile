@@ -29,7 +29,8 @@ RUN docker-php-ext-install \
     zip
 
 # --- 3. Konfigurasi Apache untuk Laravel ---
-ENV APACHE_DOCUMENT_ROOT /var/www/public
+# PERBAIKAN 1: Tambahkan '=' di ENV
+ENV APACHE_DOCUMENT_ROOT=/var/www/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf && \
     sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf && \
     a2enmod rewrite
@@ -55,11 +56,5 @@ RUN npm run build
 EXPOSE 80
 
 # --- 9. Command Startup ---
-CMD sh -c "php artisan config:cache && \
-    php artisan route:cache && \
-    php artisan view:cache && \
-    rm -rf public/storage && \
-    php artisan storage:link && \
-    chown -R www-data:www-data storage bootstrap/cache public/storage && \
-    chmod -R 775 storage bootstrap/cache public/storage && \
-    apache2-foreground"
+# PERBAIKAN 2: Gunakan format array JSON [ "sh", "-c", "perintah..." ]
+CMD ["sh", "-c", "php artisan config:cache && php artisan route:cache && php artisan view:cache && rm -rf public/storage && php artisan storage:link && chown -R www-data:www-data storage bootstrap/cache public/storage && chmod -R 775 storage bootstrap/cache public/storage && apache2-foreground"]
