@@ -24,10 +24,10 @@ class GoogleController extends Controller
             $user = User::where('email', $googleUser->getEmail())->first();
 
             if ($user) {
-                // Jika sudah ada, update id & avatar Google-nya (takutnya dia ganti foto di akun Google)
+                // Jika sudah ada, update id & avatar Google-nya
                 $user->update([
                     'google_id' => $googleUser->getId(),
-                    'google_avatar' => $googleUser->getAvatar(),
+                    'avatar' => $googleUser->getAvatar(), // <-- SUDAH DIUBAH JADI 'avatar'
                 ]);
             } else {
                 // Jika belum, register otomatis
@@ -35,7 +35,7 @@ class GoogleController extends Controller
                     'name' => $googleUser->getName(),
                     'email' => $googleUser->getEmail(),
                     'google_id' => $googleUser->getId(),
-                    'google_avatar' => $googleUser->getAvatar(),
+                    'avatar' => $googleUser->getAvatar(), // <-- SUDAH DIUBAH JADI 'avatar'
                     'password' => bcrypt(Str::random(16)), // Password acak karena login via Google
                     'role' => 'customer', 
                 ]);
@@ -45,6 +45,9 @@ class GoogleController extends Controller
             return redirect()->route('dashboard');
 
         } catch (\Exception $e) {
+            // TIPS: Jika nanti masih gagal, ubah baris return di bawah ini sementara menjadi:
+            // dd($e->getMessage()); 
+            // Untuk melihat pesan error aslinya.
             return redirect()->route('login')->with('error', 'Waduh, gagal login pakai Google. Coba lagi ya!');
         }
     }

@@ -22,8 +22,7 @@ use Illuminate\Notifications\Notifiable;
     'sim_image_url',
     'role',
     'google_id',
-    'google_avatar',   // <-- Tambahan
-    'profile_picture'  // <-- Tambahan
+    'avatar' // <-- UBAH KE 'avatar' AGAR SAMA DENGAN DATABASE
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser
@@ -43,15 +42,17 @@ class User extends Authenticatable implements FilamentUser
         return $this->role === 'admin';
     }
 
-    // LOHIKA AVATAR PINTAR: Prioritas 1 = Foto Profil, Prioritas 2 = Google, Prioritas 3 = Default
+    // LOGIKA AVATAR PINTAR
     public function getDisplayPictureAttribute()
     {
-        if (!empty($this->profile_picture)) {
-            return asset('storage/' . $this->profile_picture);
-        }
-        
-        if (!empty($this->google_avatar)) {
-            return $this->google_avatar;
+        // Cek apakah ada avatar (entah dari upload manual atau dari Google)
+        if (!empty($this->avatar)) {
+            // Jika link avatar dari Google (mengandung http), langsung return
+            if (filter_var($this->avatar, FILTER_VALIDATE_URL)) {
+                return $this->avatar;
+            }
+            // Jika upload manual (biasanya path file storage), tambahkan asset()
+            return asset('storage/' . $this->avatar);
         }
 
         // Kalau kosong semua, tampilkan inisial nama
