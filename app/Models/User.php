@@ -21,7 +21,9 @@ use Illuminate\Notifications\Notifiable;
     'ktp_image_url',
     'sim_image_url',
     'role',
-    'google_id'
+    'google_id',
+    'google_avatar',   // <-- Tambahan
+    'profile_picture'  // <-- Tambahan
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser
@@ -39,5 +41,20 @@ class User extends Authenticatable implements FilamentUser
     public function canAccessPanel(Panel $panel): bool
     {
         return $this->role === 'admin';
+    }
+
+    // LOHIKA AVATAR PINTAR: Prioritas 1 = Foto Profil, Prioritas 2 = Google, Prioritas 3 = Default
+    public function getDisplayPictureAttribute()
+    {
+        if (!empty($this->profile_picture)) {
+            return asset('storage/' . $this->profile_picture);
+        }
+        
+        if (!empty($this->google_avatar)) {
+            return $this->google_avatar;
+        }
+
+        // Kalau kosong semua, tampilkan inisial nama
+        return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=random';
     }
 }
