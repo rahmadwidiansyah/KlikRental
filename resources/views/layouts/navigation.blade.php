@@ -4,10 +4,7 @@
     class="fixed top-0 w-full z-50 backdrop-blur-xl border-b border-outline-variant/30 transition-all duration-300">
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center h-14"> <!-- Height navbar h-14 -->
-
-            <!-- Kiri: Logo & Navigasi Utama -->
-            <div class="flex items-center gap-8">
+        <div class="flex justify-between items-center h-14"> <div class="flex items-center gap-8">
                 <a href="{{ route('dashboard') }}" class="shrink-0">
                     <span class="font-montserrat text-xl font-bold text-primary">KlikRental</span>
                 </a>
@@ -31,22 +28,22 @@
                 </div>
             </div>
 
-            <!-- Kanan: Menu Autentikasi Desktop -->
             <div class="hidden lg:flex items-center">
                 @auth
-                <!-- Tampilan Desktop untuk yang SUDAH LOGIN -->
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
-                        <button class="inline-flex items-center px-3 py-1.5 border border-primary/20 rounded-lg text-[13px] font-semibold font-inter text-primary bg-primary/5 hover:bg-primary/10 transition ease-in-out duration-150">
+                        <button class="inline-flex items-center pl-2 pr-3 py-1.5 border border-primary/20 rounded-full text-[13px] font-semibold font-inter text-primary bg-primary/5 hover:bg-primary/10 transition ease-in-out duration-150 gap-2">
+                            <img src="{{ Auth::user()->display_picture }}" alt="Profile" class="h-6 w-6 rounded-full object-cover border border-primary/30 shadow-sm">
+                            
                             <div>{{ explode(' ', Auth::user()?->name ?? 'Guest')[0] }}</div>
-                            <div class="ms-1 flex items-center">
+                            <div class="-ml-1 flex items-center">
                                 <span class="material-symbols-outlined text-[18px]">expand_more</span>
                             </div>
                         </button>
                     </x-slot>
                     <x-slot name="content">
                         <x-dropdown-link :href="route('profile.edit')" class="font-inter text-[13px]">
-                            {{ __('Profile') }}
+                            {{ __('Profil Saya') }}
                         </x-dropdown-link>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
@@ -58,7 +55,6 @@
                     </x-slot>
                 </x-dropdown>
                 @else
-                <!-- Tampilan Desktop untuk yang BELUM LOGIN (GUEST) -->
                 <div class="flex items-center gap-4">
                     <a href="{{ route('login') }}" class="text-[13px] font-semibold font-inter text-on-surface-variant hover:text-primary transition-colors py-1.5">
                         Login
@@ -70,7 +66,6 @@
                 @endauth
             </div>
 
-            <!-- Tombol Menu Mobile Burger -->
             <div class="flex items-center lg:hidden">
                 <button @click="open = ! open" class="text-primary hover:bg-primary/5 p-1.5 rounded-md transition-colors">
                     <span class="material-symbols-outlined text-2xl" x-text="open ? 'close' : 'menu'">menu</span>
@@ -79,7 +74,6 @@
         </div>
     </div>
 
-    <!-- Mobile Dropdown -->
     <div x-show="open"
         x-transition:enter="transition ease-out duration-200"
         x-transition:enter-start="opacity-0 -translate-y-2"
@@ -95,14 +89,17 @@
         </div>
 
         @auth
-        <!-- Tampilan Mobile untuk yang SUDAH LOGIN -->
-        <div class="pt-3 pb-3 border-t border-outline-variant/30 bg-surface-container">
-            <div class="px-4">
-                <div class="font-bold text-sm text-on-surface font-montserrat">{{ Auth::user()?->name ?? 'User' }}</div>
-                <div class="font-medium text-xs text-on-surface-variant font-inter">{{ Auth::user()?->email ?? 'Email' }}</div>
+        <div class="pt-4 pb-4 border-t border-outline-variant/30 bg-surface-container">
+            <div class="px-4 flex items-center gap-3">
+                <img src="{{ Auth::user()->display_picture }}" alt="Profile" class="h-10 w-10 rounded-full object-cover border-2 border-primary/20 shadow-sm">
+                
+                <div>
+                    <div class="font-bold text-sm text-on-surface font-montserrat">{{ Auth::user()?->name ?? 'User' }}</div>
+                    <div class="font-medium text-xs text-on-surface-variant font-inter">{{ Auth::user()?->email ?? 'Email' }}</div>
+                </div>
             </div>
-            <div class="mt-2 space-y-1">
-                <x-responsive-nav-link :href="route('profile.edit')" class="font-inter text-[14px]">Profile</x-responsive-nav-link>
+            <div class="mt-3 space-y-1">
+                <x-responsive-nav-link :href="route('profile.edit')" class="font-inter text-[14px]">Profil Saya</x-responsive-nav-link>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <x-responsive-nav-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();" class="font-inter text-[14px] text-error">Log Out</x-responsive-nav-link>
@@ -110,7 +107,6 @@
             </div>
         </div>
         @else
-        <!-- Tampilan Mobile untuk yang BELUM LOGIN (GUEST) -->
         <div class="pt-4 pb-4 border-t border-outline-variant/30 px-4 flex gap-3">
             <a href="{{ route('login') }}" class="flex-1 text-center font-inter text-[14px] font-semibold text-on-surface-variant hover:text-primary transition py-2 border border-outline-variant/50 rounded-lg">
                 Login

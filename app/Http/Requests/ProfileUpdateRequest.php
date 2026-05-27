@@ -26,6 +26,15 @@ class ProfileUpdateRequest extends FormRequest
                 'max:255',
                 Rule::unique(User::class)->ignore($this->user()->id),
             ],
+            // Validasi untuk foto profil
+            'profile_picture' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            
+            // --- TAMBAHAN BARU (TIDAK ADA KODE YANG DIHAPUS) ---
+            'phone_number' => ['nullable', 'string', 'max:20'],
+            'nik' => ['nullable', 'string', 'max:20'],
+            'address' => ['nullable', 'string'],
+            'ktp_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            'sim_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
         ];
     }
 }

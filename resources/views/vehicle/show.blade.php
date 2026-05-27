@@ -7,16 +7,21 @@
             <span class="font-semibold text-on-surface" aria-current="page">{{ $vehicle->name }}</span>
         </nav>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <!-- EDIT 1: Ubah grid jadi flex-col di mobile, kembalikan ke grid di layar md -->
+        <div class="flex flex-col md:grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
             
-            <div class="md:col-span-2 flex flex-col gap-4">
-                <div class="w-full h-[400px] bg-surface rounded-2xl border border-outline-variant/30 flex items-center justify-center overflow-hidden premium-shadow p-4 group">
+            <!-- EDIT 2: Tambah 'contents' agar kolom ini lebur di mobile, kembali jadi flex di layar md -->
+            <div class="contents md:flex flex-col md:col-span-2 gap-4">
+                
+                <!-- URUTAN 1: FOTO UTAMA -->
+                <div class="order-1 md:order-none w-full h-[400px] bg-surface rounded-2xl border border-outline-variant/30 flex items-center justify-center overflow-hidden premium-shadow p-4 group">
                     <img id="main-image" src="{{ $vehicle->primaryImage ? Storage::url($vehicle->primaryImage->image_url) : 'https://placehold.co/800x500?text=Mobil' }}" 
                          alt="Gambar Utama {{ $vehicle->name }}" class="w-full h-full object-contain transition-opacity duration-300 group-hover:scale-105">
                 </div>
                 
                 @if($vehicle->images && $vehicle->images->count() > 0)
-                <div class="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                <!-- URUTAN 2: FOTO KECIL (THUMBNAILS) -->
+                <div class="order-2 md:order-none flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
                     @foreach($vehicle->images as $img)
                     <div class="w-24 h-24 rounded-xl border border-outline-variant/30 cursor-pointer overflow-hidden flex-shrink-0 bg-surface hover:border-primary hover:shadow-md transition-all duration-300" 
                          onclick="document.getElementById('main-image').style.opacity=0; setTimeout(() => { document.getElementById('main-image').src='{{ Storage::url($img->image_url) }}'; document.getElementById('main-image').style.opacity=1; }, 150);"
@@ -27,14 +32,16 @@
                 </div>
                 @endif
 
-                <div class="mt-4 bg-surface rounded-2xl p-6 border border-outline-variant/30 premium-shadow hover:shadow-lg transition-shadow">
+                <!-- URUTAN 5: INFORMASI KENDARAAN (Turun ke bawah setelah spesifikasi di mobile) -->
+                <div class="order-5 md:order-none mt-2 md:mt-4 bg-surface rounded-2xl p-6 border border-outline-variant/30 premium-shadow hover:shadow-lg transition-shadow">
                     <h3 class="font-montserrat font-bold text-xl mb-4">Informasi Kendaraan</h3>
                     <p class="font-inter text-on-surface-variant leading-relaxed text-justify">
                         {{ $vehicle->description ?? "Mobil {$vehicle->name} dengan transmisi {$vehicle->transmission} ini sangat cocok untuk perjalanan Anda. Dirawat secara rutin dan siap digunakan untuk dalam maupun luar kota." }}
                     </p>
                 </div>
 
-                <div class="mt-4 bg-surface rounded-2xl p-6 border border-outline-variant/30 premium-shadow hover:shadow-lg transition-shadow">
+                <!-- URUTAN 6: ULASAN PELANGGAN (Paling bawah) -->
+                <div class="order-6 md:order-none mt-2 md:mt-4 bg-surface rounded-2xl p-6 border border-outline-variant/30 premium-shadow hover:shadow-lg transition-shadow">
                     <div class="flex justify-between items-center mb-6 border-b border-outline-variant/20 pb-4">
                         <h3 class="font-montserrat font-bold text-xl flex items-center gap-2 text-on-surface">
                             <span class="material-symbols-outlined text-primary text-[24px]">forum</span>
@@ -90,8 +97,11 @@
                 </div>
             </div>
 
-            <div class="flex flex-col gap-6">
-                <div class="bg-surface rounded-2xl p-6 border border-outline-variant/30 premium-shadow">
+            <!-- EDIT 3: Tambah 'contents' agar kolom kanan lebur di mobile, kembali jadi flex di layar md -->
+            <div class="contents md:flex flex-col gap-6">
+                
+                <!-- URUTAN 3: NAMA, HARGA, & TOMBOL SEWA (Naik ke bawah foto di mobile) -->
+                <div class="order-3 md:order-none bg-surface rounded-2xl p-6 border border-outline-variant/30 premium-shadow">
                     <div class="flex items-center gap-2 mb-2">
                         <span class="bg-primary/10 text-primary px-2.5 py-0.5 rounded-full font-inter font-bold text-xs uppercase shadow-sm">{{ $vehicle->type ?? 'UMUM' }}</span>
                         
@@ -115,7 +125,8 @@
                     </a>
                 </div>
 
-                <div class="bg-surface rounded-2xl p-6 border border-outline-variant/30 premium-shadow hover:shadow-lg transition-shadow">
+                <!-- URUTAN 4: SPESIFIKASI DETAIL -->
+                <div class="order-4 md:order-none bg-surface rounded-2xl p-6 border border-outline-variant/30 premium-shadow hover:shadow-lg transition-shadow">
                     <h3 class="font-montserrat font-bold text-lg mb-4">Spesifikasi Detail</h3>
                     
                     <div class="flex flex-col gap-4 font-inter text-sm">
