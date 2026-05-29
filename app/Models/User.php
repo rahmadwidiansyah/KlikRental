@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
+use Filament\Models\Contracts\HasAvatar; // <-- 1. Tambahkan import HasAvatar
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -22,10 +23,10 @@ use Illuminate\Notifications\Notifiable;
     'sim_image_url',
     'role',
     'google_id',
-    'avatar' // <-- UBAH KE 'avatar' AGAR SAMA DENGAN DATABASE
+    'avatar' 
 ])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable implements FilamentUser
+class User extends Authenticatable implements FilamentUser, HasAvatar // <-- 2. Implementasikan HasAvatar
 {
     use HasFactory, Notifiable;
 
@@ -42,7 +43,7 @@ class User extends Authenticatable implements FilamentUser
         return $this->role === 'admin';
     }
 
-    // LOGIKA AVATAR PINTAR
+    // LOGIKA AVATAR PINTAR (Bawaanmu)
     public function getDisplayPictureAttribute()
     {
         // Cek apakah ada avatar (entah dari upload manual atau dari Google)
@@ -57,5 +58,12 @@ class User extends Authenticatable implements FilamentUser
 
         // Kalau kosong semua, tampilkan inisial nama
         return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=random';
+    }
+
+    // <-- 3. TAMBAHAN METHOD UNTUK FILAMENT -->
+    public function getFilamentAvatarUrl(): ?string
+    {
+        // Panggil logika cerdas yang sudah kamu buat di atas
+        return $this->display_picture;
     }
 }

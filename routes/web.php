@@ -21,7 +21,7 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
     Route::get('/booking/{booking_code}/detail', [BookingController::class, 'show'])->name('booking.show');
     });
 
-
+Route::get('/vehicles', [App\Http\Controllers\HomeController::class, 'indexVehicle'])->name('vehicle.index');
 Route::get('/auth/google', [GoogleController::class, 'redirectToGoogle'])->name('google.login');
 Route::get('/auth/google/callback', [GoogleController::class, 'handleGoogleCallback']);
 Route::get('/driver-kami', [App\Http\Controllers\DriverController::class, 'index'])->name('driver.index');

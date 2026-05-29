@@ -18,6 +18,11 @@ use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use App\Filament\Widgets\BookingStatsOverview;
+use App\Filament\Widgets\LatestBookings;
+use App\Filament\Widgets\RevenueChart;
+use App\Filament\Widgets\VehicleStatusChart;
+
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -26,8 +31,9 @@ class AdminPanelProvider extends PanelProvider
         return $panel
             ->id('admin')
             ->path('admin')
+            ->brandName('KlikRental Admin')
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::hex('#6D5EF7'),
             ])
             ->discoverResources(in: app_path('Filament/Admin/Resources'), for: 'App\Filament\Admin\Resources')
             ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\Filament\Admin\Pages')
@@ -38,6 +44,10 @@ class AdminPanelProvider extends PanelProvider
             ->widgets([
                 AccountWidget::class,
                 FilamentInfoWidget::class,
+                BookingStatsOverview::class,
+                RevenueChart::class,
+                LatestBookings::class,
+                VehicleStatusChart::class,
             ])
             ->middleware([
                 EncryptCookies::class,

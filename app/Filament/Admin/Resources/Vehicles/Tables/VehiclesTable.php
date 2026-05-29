@@ -16,29 +16,58 @@ class VehiclesTable
         return $table
             ->columns([
                 TextColumn::make('name')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
+                    
+                // TAMBAHAN: Kolom Class dengan Badge Warna Dinamis
+                TextColumn::make('class')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'VIP' => 'warning',      // Kuning/Emas untuk VIP
+                        'Premium' => 'info',     // Biru untuk Premium
+                        'Standard' => 'success', // Hijau untuk Standard
+                        default => 'gray',
+                    })
+                    ->searchable()
+                    ->sortable(),
+
                 TextColumn::make('type')
                     ->badge(),
+                    
                 TextColumn::make('transmission')
                     ->badge(),
+                    
                 TextColumn::make('fuel_type')
                     ->searchable(),
+                    
                 TextColumn::make('seats')
                     ->numeric()
                     ->sortable(),
+                    
                 TextColumn::make('luggage_capacity')
                     ->numeric()
                     ->sortable(),
+                    
                 TextColumn::make('price_per_day')
-                    ->numeric()
+                    ->money('IDR', locale: 'id') // Diubah dikit biar otomatis pakai format Rupiah (Rp)
                     ->sortable(),
+                    
                 TextColumn::make('status')
-                    ->badge(),
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'available' => 'success',    // Hijau
+                        'rented' => 'warning',       // Kuning
+                        'maintenance' => 'danger',   // Merah
+                        default => 'gray',
+                    }),
+                    
                 ImageColumn::make('image_url'),
+                
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+                    
                 TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
