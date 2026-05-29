@@ -18,10 +18,10 @@ use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-use App\Filament\Widgets\BookingStatsOverview;
-use App\Filament\Widgets\LatestBookings;
-use App\Filament\Widgets\RevenueChart;
-use App\Filament\Widgets\VehicleStatusChart;
+use App\Filament\Admin\Widgets\BookingStatsOverview;
+use App\Filament\Admin\Widgets\LatestBookings;
+use App\Filament\Admin\Widgets\RevenueChart;
+use App\Filament\Admin\Widgets\VehicleStatusChart;
 
 
 class AdminPanelProvider extends PanelProvider
