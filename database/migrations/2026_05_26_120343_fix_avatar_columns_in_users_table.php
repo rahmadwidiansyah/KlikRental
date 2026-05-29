@@ -12,11 +12,20 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            // Hapus 2 kolom lama yang tidak jadi kita pakai
-            $table->dropColumn(['google_avatar', 'profile_picture']);
+            // Check if 'google_avatar' exists before dropping
+            if (Schema::hasColumn('users', 'google_avatar')) {
+                $table->dropColumn('google_avatar');
+            }
+
+            // Check if 'profile_picture' exists before dropping
+            if (Schema::hasColumn('users', 'profile_picture')) {
+                $table->dropColumn('profile_picture');
+            }
             
-            // Tambahkan kolom 'avatar' yang sesuai dengan Model & Controller
-            $table->string('avatar')->nullable()->after('google_id');
+            // Add column 'avatar' only if it doesn't already exist
+            if (!Schema::hasColumn('users', 'avatar')) {
+                $table->string('avatar')->nullable()->after('google_id');
+            }
         });
     }
 
@@ -26,9 +35,18 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('avatar');
-            $table->string('google_avatar')->nullable();
-            $table->string('profile_picture')->nullable();
+            // Drop 'avatar' if it exists
+            if (Schema::hasColumn('users', 'avatar')) {
+                $table->dropColumn('avatar');
+            }
+
+            // Re-add the old columns if they don't exist
+            if (!Schema::hasColumn('users', 'google_avatar')) {
+                $table->string('google_avatar')->nullable();
+            }
+            if (!Schema::hasColumn('users', 'profile_picture')) {
+                $table->string('profile_picture')->nullable();
+            }
         });
     }
 };
