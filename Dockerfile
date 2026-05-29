@@ -44,8 +44,8 @@ COPY . .
 
 # --- 5. Build Backend ---
 ENV COMPOSER_MEMORY_LIMIT=-1
-RUN composer install --no-dev --optimize-autoloader
-
+RUN composer install  --optimize-autoloader
+#--no-dev
 # --- 6. Build Frontend ---
 RUN npm install
 RUN npm run build
