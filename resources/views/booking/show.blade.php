@@ -100,15 +100,25 @@
                             <div class="text-right font-medium">Rp {{ number_format($booking->dropoffZone->additional_cost, 0, ',', '.') }}</div>
                         </div>
 
-                        @if($booking->promo)
+                        <!-- Rumus Perhitungan PPN & Diskon -->
+                        @php
+                            $subtotal = ($booking->vehicle->price_per_day * $durationDays) + 
+                                        ($booking->driver ? $booking->driver->daily_rate * $durationDays : 0) + 
+                                        $booking->pickupZone->additional_cost + 
+                                        $booking->dropoffZone->additional_cost;
+                            
+                            // Ekstrak harga sebelum PPN (Total Pembayaran dibagi 1.11)
+                            $baseTotal = round($booking->total_price / 1.11);
+                            
+                            // Pajak 11%
+                            $tax = $booking->total_price - $baseTotal;
+                            
+                            // Diskon = Subtotal Murni dikurangi Harga Sebelum PPN
+                            $discounted = $subtotal - $baseTotal;
+                        @endphp
+
+                        @if($booking->promo && $discounted > 0)
                         <div class="grid grid-cols-3 py-3 text-forest-green font-semibold">
-                            @php
-                                $subtotal = ($booking->vehicle->price_per_day * $durationDays) + 
-                                            ($booking->driver ? $booking->driver->daily_rate * $durationDays : 0) + 
-                                            $booking->pickupZone->additional_cost + 
-                                            $booking->dropoffZone->additional_cost;
-                                $discounted = $subtotal - $booking->total_price;
-                            @endphp
                             <div class="col-span-2 flex items-center gap-1">
                                 <span class="material-symbols-outlined text-[16px]">local_offer</span>
                                 Diskon Promo ({{ $booking->promo->code }})
@@ -116,7 +126,15 @@
                             <div class="text-right">- Rp {{ number_format($discounted, 0, ',', '.') }}</div>
                         </div>
                         @endif
+
+                        <!-- TAMBAHAN BARIS PPN 11% -->
+                        <div class="grid grid-cols-3 py-3">
+                            <div class="col-span-2 text-on-surface-variant font-medium">Pajak (PPN 11%)</div>
+                            <div class="text-right font-medium">Rp {{ number_format($tax, 0, ',', '.') }}</div>
+                        </div>
                     </div>
+
+                    <!-- Total Block -->
 
                     <!-- Total Block -->
                     <div class="bg-surface-container border-t border-outline-variant/50 px-4 py-4 grid grid-cols-3 items-center">

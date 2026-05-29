@@ -68,6 +68,21 @@ class BookingController extends Controller
             return back()->with('error', 'Transaksi Ditolak: Mobil sedang disewa atau dalam masa perawatan pada tanggal tersebut.');
         }
 
+        // Tambahkan di dalam metode store(), setelah pengecekan $isOverlap kendaraan:
+
+        if ($request->driver_id) {
+            $isDriverOverlap = Booking::where('driver_id', $request->driver_id)
+                ->whereNotIn('status', ['cancelled', 'completed'])
+                ->where(function ($q) use ($start, $end) {
+                    $q->where('start_date', '<=', $end)
+                        ->where('end_date', '>=', $start);
+                })->exists();
+
+            if ($isDriverOverlap) {
+                return back()->with('error', 'Transaksi Ditolak: Supir yang dipilih sudah ada jadwal pada tanggal tersebut.');
+            }
+        }
+
         $durationHours = $start->diffInHours($end);
         $durationDays = ceil($durationHours / 24) ?: 1;
 
