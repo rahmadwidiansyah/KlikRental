@@ -42,12 +42,14 @@
         }
     </style>
 
-    <!-- State Alpine.js untuk Modal dan Value Supir -->
+    <!-- State Alpine.js untuk Modal dan Value Supir & Nomor WA -->
     <div x-data="{ 
             showDriverModal: false, 
             driverId: '', 
             driverName: 'Tanpa Supir (Lepas Kunci)', 
-            driverPrice: '+ Rp 0/hari' 
+            driverPrice: '+ Rp 0/hari',
+            showPhoneModal: {{ $errors->has('phone_number') ? 'true' : 'false' }},
+            userPhone: '{{ old('phone_number', auth()->user()->phone_number) }}'
          }"
         class="max-w-5xl mx-auto px-4 py-10">
 
@@ -60,9 +62,14 @@
             </p>
         </div>
 
-        <form action="{{ route('booking.store') }}" method="POST" id="bookingForm" class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        <!-- PERUBAHAN: Tambahan event @submit.prevent untuk mencegat submit form jika nomor WA kosong -->
+        <form action="{{ route('booking.store') }}" method="POST" id="bookingForm" class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start"
+              @submit.prevent="if(!userPhone || userPhone.trim() === '') { showPhoneModal = true; } else { $el.submit(); }">
             @csrf
             <input type="hidden" name="vehicle_id" value="{{ $vehicle->id }}">
+            
+            <!-- PERUBAHAN: Input Hidden untuk Nomor WA -->
+            <input type="hidden" name="phone_number" x-model="userPhone">
 
             <!-- Kolom Kiri: Input Data -->
             <div class="lg:col-span-2 bg-surface border border-outline-variant/60 rounded-2xl p-5 md:p-6 premium-shadow space-y-6">
@@ -295,6 +302,63 @@
         </div>
         <!-- ============================================== -->
 
+        <!-- PERUBAHAN: MODAL POPUP JIKA NOMOR WHATSAPP KOSONG -->
+        <div x-show="showPhoneModal" class="fixed inset-0 z-[105] flex items-center justify-center p-4 sm:p-6" style="display: none;">
+            <div x-show="showPhoneModal" x-transition.opacity class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+
+            <div x-show="showPhoneModal"
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 translate-y-8 scale-95"
+                x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                x-transition:leave="transition ease-in duration-200"
+                x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                x-transition:leave-end="opacity-0 translate-y-8 scale-95"
+                class="relative bg-surface w-full max-w-md rounded-2xl shadow-2xl flex flex-col border border-outline-variant/30 overflow-hidden">
+
+                <div class="p-5 border-b border-outline-variant/30 flex justify-between items-center bg-surface-container/50">
+                    <h3 class="font-montserrat font-bold text-lg text-on-surface">Lengkapi Profil Anda</h3>
+                    <button @click="showPhoneModal = false" type="button" class="w-8 h-8 flex items-center justify-center rounded-full bg-surface border border-outline-variant text-on-surface-variant hover:text-error hover:border-error/30 transition-all">
+                        <span class="material-symbols-outlined text-[20px]">close</span>
+                    </button>
+                </div>
+
+                <div class="p-6">
+                    <div class="w-14 h-14 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-4 mx-auto border border-primary/20">
+                        <span class="material-symbols-outlined text-[28px]">forum</span>
+                    </div>
+                    <p class="font-inter text-[13.5px] text-on-surface-variant text-center mb-6 leading-relaxed">
+                        Sistem mendeteksi Anda belum mengatur <strong>Nomor WhatsApp</strong>. Nomor ini diwajibkan untuk koordinasi penjemputan dengan tim atau pengemudi kami.
+                    </p>
+
+                    <div>
+                        <label class="font-inter font-semibold text-[13px] text-on-surface-variant mb-1.5 block">
+                            Nomor WhatsApp <span class="text-error">*</span>
+                        </label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-primary text-[20px]">call</span>
+                            <input type="tel" x-model="userPhone" placeholder="Contoh: 081234567890" required
+                                class="w-full bg-surface border @error('phone_number') border-error @else border-outline-variant/50 @enderror rounded-xl py-2.5 pl-10 pr-4 text-[14px] text-on-surface focus:border-primary focus:ring-0 outline-none transition-all">
+                        </div>
+                        @error('phone_number')
+                            <p class="text-error text-[11px] mt-1.5 font-inter font-medium flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[14px]">error</span>{{ $message }}
+                            </p>
+                        @enderror
+                    </div>
+                </div>
+
+                <div class="p-5 border-t border-outline-variant/30 bg-surface-container/30 flex justify-end gap-3">
+                    <button type="button" @click="showPhoneModal = false" class="px-4 py-2 text-[13px] font-bold font-inter text-on-surface-variant hover:bg-surface-container rounded-xl transition-all">Batal</button>
+                    <!-- Tombol ini memicu submit form utama setelah mengisi data -->
+                    <button type="button" @click="if(userPhone && userPhone.trim() !== '') { showPhoneModal = false; $nextTick(() => document.getElementById('bookingForm').submit()); }" 
+                        class="px-5 py-2 text-[13px] font-bold font-inter text-white bg-primary rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center gap-1">
+                        Simpan & Lanjut <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- ============================================== -->
+
     </div>
 
     <!-- JS Flatpickr -->
@@ -367,7 +431,8 @@
 
             // Deklarasi Variabel DOM
             const form = document.getElementById('bookingForm');
-            const inputs = form.querySelectorAll('input:not(#driver_input), select');
+            // PERUBAHAN: Jangan re-trigger kalkulasi kalau inputnya dari modal phone number (type hidden)
+            const inputs = form.querySelectorAll('input:not(#driver_input):not([name="phone_number"]), select');
             const btnSubmit = document.getElementById('btn-submit');
 
             const elDuration = document.getElementById('detail-duration');
@@ -409,7 +474,6 @@
             function calculatePrice() {
                 const formData = new FormData(form);
 
-                // PERBAIKAN DI BARIS INI: Pakai kutip ganda (") di luar dan hapus spasi di nama rute
                 fetch("{{ route('booking.calculatePrice') }}", {
                             method: 'POST',
                             headers: {

@@ -50,6 +50,7 @@ class BookingController extends Controller
 
     public function store(Request $request)
     {
+        // PERUBAHAN: Tambahkan validasi phone_number (karena di-submit via form hidden)
         $request->validate([
             'vehicle_id' => 'required|exists:vehicles,id',
             'start_date' => 'required|date|after_or_equal:today',
@@ -57,7 +58,8 @@ class BookingController extends Controller
             'pickup_zone_id' => 'required|exists:zones,id',
             'dropoff_zone_id' => 'required|exists:zones,id',
             'driver_id' => 'nullable|exists:drivers,id',
-            'promo_code' => 'nullable|string'
+            'promo_code' => 'nullable|string',
+            'phone_number' => 'required|string|min:10|max:15'
         ]);
 
         $start = Carbon::parse($request->start_date);
@@ -103,7 +105,12 @@ class BookingController extends Controller
             }
         }
 
-       
+        // PERUBAHAN: Jika phone_number user di DB kosong, update & simpan nomor WA ini secara permanen
+        $user = Auth::user();
+        if (empty($user->phone_number)) {
+            $user->update(['phone_number' => $request->phone_number]);
+        }
+
         $durationHours = $start->diffInHours($end);
         $durationDays = ceil($durationHours / 24) ?: 1;
 
@@ -146,7 +153,7 @@ class BookingController extends Controller
 
         Booking::create([
             'booking_code' => $bookingCode,
-            'user_id' => Auth::id(),
+            'user_id' => $user->id,
             'vehicle_id' => $vehicle->id,
             'driver_id' => $request->driver_id,
             'pickup_zone_id' => $pickupZone->id,
@@ -276,7 +283,8 @@ class BookingController extends Controller
                 'customer_details' => [
                     'first_name' => $booking->user->name,
                     'email' => $booking->user->email,
-                    'phone' => $booking->user->phone ?? '081234567890',
+                    // PERUBAHAN: Gunakan phone number yang sekarang ditarik otomatis dari tabel user
+                    'phone' => $booking->user->phone_number ?? '081234567890', 
                 ],
                 'item_details' => [
                     [
@@ -307,15 +315,12 @@ class BookingController extends Controller
         return view('booking.index', compact('bookings'));
     }
 
-    // Tambahkan use App\Models\Review; di bagian atas controller
-
     public function storeReview(Request $request, $bookingCode)
     {
         $booking = Booking::where('booking_code', $bookingCode)
             ->where('user_id', Auth::id())
             ->firstOrFail();
 
-        // Validasi: Hanya pesanan completed yang belum di-review yang bisa dinilai
         if ($booking->status !== 'completed') {
             return back()->with('error', 'Pesanan harus diselesaikan sebelum memberi ulasan.');
         }
