@@ -19,13 +19,21 @@ class BookingController extends Controller
 {
     public function create(Vehicle $vehicle)
     {
+        // 1. Pengaman Status Kendaraan
+        if ($vehicle->status !== 'available') {
+            return redirect()->route('vehicle.show', $vehicle->id)
+                             ->with('error', 'Maaf, kendaraan ini sedang tidak tersedia untuk disewa saat ini.');
+        }
+
+        // 2. Ambil data zona dan supir yang tersedia (TIDAK DOBEL)
         $zones = Zone::where('is_active', true)->get();
 
         $drivers = Driver::where('status', 'available')
             ->withCount('bookings')
-            ->withAvg('reviews', 'driver_rating') // <-- Ubah jadi driver_rating
+            ->withAvg('reviews', 'driver_rating')
             ->get();
 
+        // 3. Ambil data booking untuk di-disable di kalender Flatpickr
         $bookedRanges = Booking::where('vehicle_id', $vehicle->id)
             ->whereNotIn('status', ['cancelled'])
             ->where('end_date', '>=', now()->subDays(2))
@@ -54,9 +62,9 @@ class BookingController extends Controller
 
         $start = Carbon::parse($request->start_date);
         $end = Carbon::parse($request->end_date);
-
         $startMinus2Days = (clone $start)->subDays(2);
-
+        
+        // --- 🚨 CEK BENTROK MOBIL (Dikeluarkan dari IF Supir) 🚨 ---
         $isOverlap = Booking::where('vehicle_id', $request->vehicle_id)
             ->whereNotIn('status', ['cancelled'])
             ->where(function ($q) use ($startMinus2Days, $end) {
@@ -68,8 +76,7 @@ class BookingController extends Controller
             return back()->with('error', 'Transaksi Ditolak: Mobil sedang disewa atau dalam masa perawatan pada tanggal tersebut.');
         }
 
-        // Tambahkan di dalam metode store(), setelah pengecekan $isOverlap kendaraan:
-
+        // --- CEK BENTROK SUPIR (Hanya jika pakai supir) ---
         if ($request->driver_id) {
             $isDriverOverlap = Booking::where('driver_id', $request->driver_id)
                 ->whereNotIn('status', ['cancelled', 'completed'])
@@ -83,6 +90,20 @@ class BookingController extends Controller
             }
         }
 
+        // --- PENGAMAN STATUS REAL-TIME ---
+        $vehicleCheck = Vehicle::findOrFail($request->vehicle_id);
+        if ($vehicleCheck->status !== 'available') {
+            return back()->with('error', 'Mohon maaf, kendaraan ini baru saja disewa oleh pelanggan lain atau sedang dalam perawatan.');
+        }
+
+        if ($request->driver_id) {
+            $driverCheck = Driver::findOrFail($request->driver_id);
+            if ($driverCheck->status !== 'available') {
+                return back()->with('error', 'Mohon maaf, supir yang Anda pilih baru saja mendapat tugas lain.');
+            }
+        }
+
+       
         $durationHours = $start->diffInHours($end);
         $durationDays = ceil($durationHours / 24) ?: 1;
 

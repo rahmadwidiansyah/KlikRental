@@ -1,8 +1,16 @@
 <x-app-layout>
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-
+        <!-- Tambahan Breadcrumb Navigasi -->
+        <nav class="flex mb-6 text-sm text-on-surface-variant font-inter" aria-label="Breadcrumb">
+            <a href="{{ route('driver.index') }}" class="hover:text-primary transition-colors flex items-center gap-1" title="Kembali ke Daftar Supir">
+                <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+                Daftar Mitra Pengemudi
+            </a>
+            <span class="mx-2" aria-hidden="true">/</span>
+            <span class="font-semibold text-on-surface" aria-current="page">Profil {{ $driver->name }}</span>
+        </nav>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-
+            
             <!-- KOLOM KIRI: Foto Profil & Info Cepat -->
             <div class="md:col-span-1 flex flex-col gap-6">
                 <!-- Card Profil Utama -->

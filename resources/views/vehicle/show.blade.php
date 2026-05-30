@@ -7,20 +7,16 @@
             <span class="font-semibold text-on-surface" aria-current="page">{{ $vehicle->name }}</span>
         </nav>
 
-        <!-- EDIT 1: Ubah grid jadi flex-col di mobile, kembalikan ke grid di layar md -->
         <div class="flex flex-col md:grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
             
-            <!-- EDIT 2: Tambah 'contents' agar kolom ini lebur di mobile, kembali jadi flex di layar md -->
             <div class="contents md:flex flex-col md:col-span-2 gap-4">
                 
-                <!-- URUTAN 1: FOTO UTAMA -->
                 <div class="order-1 md:order-none w-full h-[400px] bg-surface rounded-2xl border border-outline-variant/30 flex items-center justify-center overflow-hidden premium-shadow p-4 group">
                     <img id="main-image" src="{{ $vehicle->primaryImage ? Storage::url($vehicle->primaryImage->image_url) : 'https://placehold.co/800x500?text=Mobil' }}" 
                          alt="Gambar Utama {{ $vehicle->name }}" class="w-full h-full object-contain transition-opacity duration-300 group-hover:scale-105">
                 </div>
                 
                 @if($vehicle->images && $vehicle->images->count() > 0)
-                <!-- URUTAN 2: FOTO KECIL (THUMBNAILS) -->
                 <div class="order-2 md:order-none flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
                     @foreach($vehicle->images as $img)
                     <div class="w-24 h-24 rounded-xl border border-outline-variant/30 cursor-pointer overflow-hidden flex-shrink-0 bg-surface hover:border-primary hover:shadow-md transition-all duration-300" 
@@ -32,7 +28,6 @@
                 </div>
                 @endif
 
-                <!-- URUTAN 5: INFORMASI KENDARAAN (Turun ke bawah setelah spesifikasi di mobile) -->
                 <div class="order-5 md:order-none mt-2 md:mt-4 bg-surface rounded-2xl p-6 border border-outline-variant/30 premium-shadow hover:shadow-lg transition-shadow">
                     <h3 class="font-montserrat font-bold text-xl mb-4">Informasi Kendaraan</h3>
                     <p class="font-inter text-on-surface-variant leading-relaxed text-justify">
@@ -40,7 +35,6 @@
                     </p>
                 </div>
 
-                <!-- URUTAN 6: ULASAN PELANGGAN (Paling bawah) -->
                 <div class="order-6 md:order-none mt-2 md:mt-4 bg-surface rounded-2xl p-6 border border-outline-variant/30 premium-shadow hover:shadow-lg transition-shadow">
                     <div class="flex justify-between items-center mb-6 border-b border-outline-variant/20 pb-4">
                         <h3 class="font-montserrat font-bold text-xl flex items-center gap-2 text-on-surface">
@@ -97,17 +91,25 @@
                 </div>
             </div>
 
-            <!-- EDIT 3: Tambah 'contents' agar kolom kanan lebur di mobile, kembali jadi flex di layar md -->
             <div class="contents md:flex flex-col gap-6">
                 
-                <!-- URUTAN 3: NAMA, HARGA, & TOMBOL SEWA (Naik ke bawah foto di mobile) -->
                 <div class="order-3 md:order-none bg-surface rounded-2xl p-6 border border-outline-variant/30 premium-shadow">
                     <div class="flex items-center gap-2 mb-2">
                         <span class="bg-primary/10 text-primary px-2.5 py-0.5 rounded-full font-inter font-bold text-xs uppercase shadow-sm">{{ $vehicle->type ?? 'UMUM' }}</span>
                         
-                        <span class="px-2.5 py-0.5 rounded-full font-inter font-bold text-xs shadow-sm {{ (!isset($vehicle->status) || $vehicle->status === 'available') ? 'bg-forest-light text-forest-green' : 'bg-red-100 text-red-600' }}">
-                            {{ (!isset($vehicle->status) || $vehicle->status === 'available') ? 'Tersedia' : 'Sedang Disewa' }}
-                        </span>
+                        @if($vehicle->status === 'available')
+                            <span class="bg-forest-light text-forest-green px-2.5 py-0.5 rounded-full font-inter font-bold text-xs shadow-sm flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-forest-green animate-pulse"></span> Tersedia
+                            </span>
+                        @elseif($vehicle->status === 'rented')
+                            <span class="bg-blue-100 text-blue-700 px-2.5 py-0.5 rounded-full font-inter font-bold text-xs shadow-sm flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span> Sedang Disewa
+                            </span>
+                        @elseif($vehicle->status === 'maintenance')
+                            <span class="bg-red-100 text-red-600 px-2.5 py-0.5 rounded-full font-inter font-bold text-xs shadow-sm flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-red-600"></span> Perawatan
+                            </span>
+                        @endif
                     </div>
                     
                     <h1 class="font-montserrat text-2xl font-bold text-on-surface mb-1">{{ $vehicle->name }}</h1>
@@ -119,13 +121,19 @@
                         </div>
                     </div>
 
-                    <a href="{{ route('booking.create', $vehicle->id) }}" class="mt-6 w-full bg-primary text-white font-inter font-bold py-3.5 rounded-xl hover:bg-primary/90 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-primary/30 focus:ring-4 focus:ring-primary/20">
-                        Sewa Sekarang
-                        <span class="material-symbols-outlined text-[20px]" aria-hidden="true">arrow_forward</span>
-                    </a>
+                    @if($vehicle->status === 'available')
+                        <a href="{{ route('booking.create', $vehicle->id) }}" class="mt-6 w-full bg-primary text-white font-inter font-bold py-3.5 rounded-xl hover:bg-primary/90 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-primary/30 focus:ring-4 focus:ring-primary/20">
+                            Sewa Sekarang
+                            <span class="material-symbols-outlined text-[20px]" aria-hidden="true">arrow_forward</span>
+                        </a>
+                    @else
+                        <button disabled class="mt-6 w-full bg-surface-container-highest text-on-surface-variant/50 font-inter font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 cursor-not-allowed">
+                            <span class="material-symbols-outlined text-[20px]" aria-hidden="true">lock</span>
+                            {{ $vehicle->status === 'rented' ? 'Sedang Disewa' : 'Sedang Perawatan' }}
+                        </button>
+                    @endif
                 </div>
 
-                <!-- URUTAN 4: SPESIFIKASI DETAIL -->
                 <div class="order-4 md:order-none bg-surface rounded-2xl p-6 border border-outline-variant/30 premium-shadow hover:shadow-lg transition-shadow">
                     <h3 class="font-montserrat font-bold text-lg mb-4">Spesifikasi Detail</h3>
                     
