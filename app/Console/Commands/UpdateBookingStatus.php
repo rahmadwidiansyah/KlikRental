@@ -49,11 +49,11 @@ class UpdateBookingStatus extends Command
 
     private function sendLateWebhookToN8n($booking, $now)
     {
-        $webhookUrl = env('N8N_WEBHOOK_LATE_URL');
+        $webhookUrl = env('N8N_WEBHOOK_URL');
         $adminPhone = env('ADMIN_PHONE', '081234567890');
 
         if (!$webhookUrl) {
-            Log::warning('N8N_WEBHOOK_LATE_URL belum diset di .env');
+            Log::warning('N8N_WEBHOOK_URL belum diset di .env');
             return;
         }
 
