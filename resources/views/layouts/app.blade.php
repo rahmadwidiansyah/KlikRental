@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="light">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 
 <head>
     <meta charset="utf-8">
@@ -8,15 +8,20 @@
 
     <title>{{ config('app.name', 'KlikRental') }} - Digital Modern Tanpa Ribet</title>
 
-    <!-- Fonts & Icons -->
+    <script>
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Inter:wght@400;600&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
 
-    <!-- Scripts (Vite) -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-    <!-- Tailwind Config via CDN -->
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script id="tailwind-config">
         tailwind.config = {
@@ -24,20 +29,18 @@
             theme: {
                 extend: {
                     colors: {
-                        "primary": "#6D5EF7",
-                        /* Ungu Dominan */
-                        "secondary": "#3B82F6",
-                        /* Biru Kombinasi */
-                        "forest-green": "#476428",
-                        /* Hijau Forest (Aksen Positif/Tersedia) */
-                        "forest-light": "#f1f6ed",
-                        "background": "#F9F9FB",
-                        "surface": "#FFFFFF",
-                        "surface-container-lowest": "#FFFFFF",
-                        "surface-container": "#F3F3F5",
-                        "on-surface": "#1A1C1D",
-                        "on-surface-variant": "#44483D",
-                        "outline-variant": "#C4C8B9",
+                        /* Menggunakan CSS Variables dari :root dan .dark */
+                        "primary": "var(--color-primary)",
+                        "secondary": "var(--color-secondary)",
+                        "forest-green": "var(--color-forest-green)",
+                        "forest-light": "var(--color-forest-light)",
+                        "background": "var(--color-background)",
+                        "surface": "var(--color-surface)",
+                        "surface-container-lowest": "var(--color-surface-container-lowest)",
+                        "surface-container": "var(--color-surface-container)",
+                        "on-surface": "var(--color-on-surface)",
+                        "on-surface-variant": "var(--color-on-surface-variant)",
+                        "outline-variant": "var(--color-outline-variant)",
                     },
                     fontFamily: {
                         "montserrat": ["Montserrat", "sans-serif"],
@@ -49,6 +52,36 @@
     </script>
 
     <style>
+        /* TEMA LIGHT (Terang) */
+        :root {
+            --color-primary: #6D5EF7;
+            --color-secondary: #3B82F6;
+            --color-forest-green: #476428;
+            --color-forest-light: #f1f6ed;
+            --color-background: #F9F9FB;
+            --color-surface: #FFFFFF;
+            --color-surface-container-lowest: #FFFFFF;
+            --color-surface-container: #F3F3F5;
+            --color-on-surface: #1A1C1D;
+            --color-on-surface-variant: #44483D;
+            --color-outline-variant: #C4C8B9;
+        }
+
+        /* TEMA DARK (Gelap) */
+        .dark {
+            --color-primary: #8174f8; /* Ungu sedikit lebih terang biar kontras */
+            --color-secondary: #60a5fa;
+            --color-forest-green: #8cd95c;
+            --color-forest-light: #162411; /* Background hijau gelap */
+            --color-background: #0f1115; /* Latar utama super gelap */
+            --color-surface: #1a1d21; /* Latar kartu agak terang */
+            --color-surface-container-lowest: #14171a;
+            --color-surface-container: #262a2f; /* Latar kontainer */
+            --color-on-surface: #f1f5f9; /* Teks putih terang */
+            --color-on-surface-variant: #94a3b8; /* Teks abu-abu mute */
+            --color-outline-variant: #334155; /* Garis border gelap */
+        }
+
         html {
             scroll-behavior: smooth;
         }
@@ -62,6 +95,10 @@
 
         .premium-shadow {
             box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.04);
+        }
+
+        .dark .premium-shadow {
+            box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.2); /* Shadow lebih pekat di dark mode */
         }
 
         .vehicle-card:hover {
@@ -89,7 +126,7 @@
             height: 2px;
             bottom: -2px;
             left: 0;
-            background: linear-gradient(90deg, #6D5EF7, #3B82F6);
+            background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
             transition: width 0.3s ease-in-out;
             border-radius: 2px;
         }
@@ -98,38 +135,28 @@
         .nav-link-hover.active::after {
             width: 100%;
         }
-
-        .hero-bg {
-            background-size: cover;
-            background-position: center;
-        }
-
-        .gradient-overlay {
-            background: linear-gradient(180deg, rgba(109, 94, 247, 0.2) 0%, rgba(0, 0, 0, 0.8) 100%);
-        }
-
-
     </style>
 </head>
 
-<body class="bg-background text-on-surface font-inter text-[16px] antialiased overflow-x-hidden flex flex-col min-h-screen">
+<body class="bg-background text-on-surface font-inter text-[16px] antialiased overflow-x-hidden flex flex-col min-h-screen transition-colors duration-300">
 
     @include('layouts.navigation')
 
-    <main class="flex-grow pt-16"> <!-- Padding atas dikurangi agar lebih compact -->
+    <!-- Padding bawah ditambahkan (pb-20) untuk memberi ruang pada bottom navigation di mobile -->
+    <main class="flex-grow pt-16 pb-20 lg:pb-0">
         {{ $slot }}
     </main>
 
-    <!-- Footer -->
-    <footer class="w-full py-6 border-t border-outline-variant/30 bg-surface mt-auto">
+    <!-- Margin bawah ditambahkan (mb-16) untuk mobile agar tidak tertutup bottom nav -->
+    <footer class="w-full py-6 border-t border-outline-variant/30 bg-surface mt-auto transition-colors duration-300 mb-16 lg:mb-0">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center">
             <div class="mb-4 md:mb-0 text-center md:text-left">
                 <span class="font-montserrat text-[18px] font-bold text-primary block mb-1">KlikRental</span>
                 <p class="font-inter text-[13px] text-on-surface-variant">© {{ date('Y') }} KlikRental Indonesia. Solusi Sewa Kendaraan Modern.</p>
             </div>
             <nav class="flex gap-6">
-                <a class="font-inter text-[13px] text-on-surface-variant hover:text-primary transition-colors" href="#">Kebijakan Privasi</a>
-                <a class="font-inter text-[13px] text-on-surface-variant hover:text-primary transition-colors" href="#">Syarat & Ketentuan</a>
+                <a class="font-inter text-[13px] text-on-surface-variant hover:text-primary transition-colors" href="{{ route('privacy') }}">Kebijakan Privasi</a>
+                <a class="font-inter text-[13px] text-on-surface-variant hover:text-primary transition-colors" href="{{ route('terms') }}">Syarat & Ketentuan</a>
             </nav>
         </div>
     </footer>

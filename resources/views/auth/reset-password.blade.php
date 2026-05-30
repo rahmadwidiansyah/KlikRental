@@ -9,27 +9,23 @@
     <form method="POST" action="{{ route('password.store') }}" class="space-y-4">
         @csrf
 
-        <!-- Password Reset Token -->
         <input type="hidden" name="token" value="{{ $request->route('token') }}">
 
-        <!-- Email Address -->
         <div>
-            <x-input-label for="email" :value="__('Email')" class="font-inter font-semibold text-[13px]" />
-            <x-text-input id="email" class="block mt-1 w-full bg-surface border-outline-variant/60 rounded-xl focus:border-primary focus:ring-primary/20" type="email" name="email" :value="old('email', $request->email)" required autofocus autocomplete="username" />
+            <x-input-label for="email" :value="__('Email')" class="font-inter font-semibold text-[13px] text-on-surface" />
+            <x-text-input id="email" class="block mt-1 w-full bg-surface text-on-surface border-outline-variant/60 rounded-xl focus:border-primary focus:ring-primary/20" type="email" name="email" :value="old('email', $request->email)" required autofocus autocomplete="username" />
             <x-input-error :messages="$errors->get('email')" class="mt-2" />
         </div>
 
-        <!-- Password -->
         <div>
-            <x-input-label for="password" :value="__('Password Baru')" class="font-inter font-semibold text-[13px]" />
-            <x-text-input id="password" class="block mt-1 w-full bg-surface border-outline-variant/60 rounded-xl focus:border-primary focus:ring-primary/20" type="password" name="password" required autocomplete="new-password" />
+            <x-input-label for="password" :value="__('Password Baru')" class="font-inter font-semibold text-[13px] text-on-surface" />
+            <x-text-input id="password" class="block mt-1 w-full bg-surface text-on-surface border-outline-variant/60 rounded-xl focus:border-primary focus:ring-primary/20" type="password" name="password" required autocomplete="new-password" />
             <x-input-error :messages="$errors->get('password')" class="mt-2" />
         </div>
 
-        <!-- Confirm Password -->
         <div>
-            <x-input-label for="password_confirmation" :value="__('Konfirmasi Password')" class="font-inter font-semibold text-[13px]" />
-            <x-text-input id="password_confirmation" class="block mt-1 w-full bg-surface border-outline-variant/60 rounded-xl focus:border-primary focus:ring-primary/20"
+            <x-input-label for="password_confirmation" :value="__('Konfirmasi Password')" class="font-inter font-semibold text-[13px] text-on-surface" />
+            <x-text-input id="password_confirmation" class="block mt-1 w-full bg-surface text-on-surface border-outline-variant/60 rounded-xl focus:border-primary focus:ring-primary/20"
                                 type="password"
                                 name="password_confirmation" required autocomplete="new-password" />
             <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />

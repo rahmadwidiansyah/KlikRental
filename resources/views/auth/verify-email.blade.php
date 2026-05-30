@@ -7,13 +7,12 @@
     </div>
 
     @if (session('status') == 'verification-link-sent')
-        <div class="mb-6 bg-forest-light text-forest-green border border-forest-green/20 text-sm p-3 rounded-xl font-inter text-center">
+        <div class="mb-6 bg-forest-light text-forest-green border border-forest-green/20 text-sm p-3 rounded-xl font-inter text-center dark:text-[#8cd95c]">
             Tautan verifikasi baru telah dikirim ke alamat email yang Anda berikan saat pendaftaran.
         </div>
     @endif
 
     <div class="space-y-4">
-        <!-- Form Kirim Ulang Email -->
         <form method="POST" action="{{ route('verification.send') }}">
             @csrf
             <button type="submit" class="w-full bg-primary text-[#FFFFFF] font-montserrat font-bold text-[14px] py-3 rounded-xl hover:bg-primary/90 transition-all active:scale-95 shadow-lg shadow-primary/20 border border-transparent">
@@ -21,7 +20,6 @@
             </button>
         </form>
 
-        <!-- Form Log Out -->
         <form method="POST" action="{{ route('logout') }}" class="text-center">
             @csrf
             <button type="submit" class="text-[13px] font-inter text-on-surface-variant hover:text-error transition-colors hover:underline">

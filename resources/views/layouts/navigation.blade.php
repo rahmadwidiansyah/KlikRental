@@ -1,11 +1,27 @@
-<nav x-data="{ open: false, scrolled: false }"
+<nav x-data="{ 
+        scrolled: false,
+        isDark: document.documentElement.classList.contains('dark'),
+        toggleTheme() {
+            this.isDark = !this.isDark;
+            if (this.isDark) {
+                document.documentElement.classList.add('dark');
+                localStorage.theme = 'dark';
+            } else {
+                document.documentElement.classList.remove('dark');
+                localStorage.theme = 'light';
+            }
+        }
+    }"
     @scroll.window="scrolled = (window.pageYOffset > 10)"
     :class="scrolled ? 'bg-surface/95 shadow-md py-1' : 'bg-surface/80 py-2'"
     class="fixed top-0 w-full z-50 backdrop-blur-xl border-b border-outline-variant/30 transition-all duration-300">
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center h-14"> <div class="flex items-center gap-8">
-                <a href="{{ route('dashboard') }}" class="shrink-0">
+        <div class="flex justify-between items-center h-14">
+
+            <!-- KIRI: Logo & Menu Utama -->
+            <div class="flex items-center gap-8">
+                <a href="{{ route('welcome') }}" class="shrink-0">
                     <span class="font-montserrat text-xl font-bold text-primary">KlikRental</span>
                 </a>
 
@@ -13,49 +29,94 @@
                     <a href="{{ route('dashboard') }}" class="nav-link-hover font-inter font-semibold text-[13px] {{ request()->routeIs('dashboard') ? 'text-primary active' : 'text-on-surface-variant hover:text-primary' }} transition-colors py-1">
                         Katalog Armada
                     </a>
+                    
+                    @auth
                     <a href="{{ route('booking.index') }}" class="nav-link-hover font-inter font-semibold text-[13px] {{ request()->routeIs('booking.index') ? 'text-primary active' : 'text-on-surface-variant hover:text-primary' }} transition-colors py-1">
                         Riwayat Pesanan
                     </a>
+                    @endauth
+                    
                     <a href="{{ route('driver.index') }}" class="nav-link-hover font-inter font-semibold text-[13px] {{ request()->routeIs('driver.index') ? 'text-primary active' : 'text-on-surface-variant hover:text-primary' }} transition-colors py-1">
                         Driver Kami
                     </a>
-                    <a href="#" class="nav-link-hover font-inter font-semibold text-[13px] text-on-surface-variant hover:text-primary transition-colors py-1">
+                    
+                    <a href="{{ route('about') }}" class="nav-link-hover font-inter font-semibold text-[13px] {{ request()->routeIs('about') ? 'text-primary active' : 'text-on-surface-variant hover:text-primary' }} transition-colors py-1">
                         Tentang Perusahaan
                     </a>
-                    <a href="#" class="nav-link-hover font-inter font-semibold text-[13px] text-on-surface-variant hover:text-primary transition-colors py-1">
+                    <a href="{{ route('cs') }}" class="nav-link-hover font-inter font-semibold text-[13px] {{ request()->routeIs('cs') ? 'text-primary active' : 'text-on-surface-variant hover:text-primary' }} transition-colors py-1">
                         Layanan CS
                     </a>
                 </div>
             </div>
 
-            <div class="hidden lg:flex items-center">
+            <!-- KANAN: Tombol Tema & Profil (Berlaku untuk Desktop & Mobile) -->
+            <div class="flex items-center gap-3 lg:gap-4">
+                <!-- Tombol Toggle Tema -->
+                <button @click="toggleTheme()" class="text-on-surface-variant hover:text-primary transition-colors p-1.5 rounded-full hover:bg-surface-container focus:outline-none flex items-center justify-center border border-transparent hover:border-outline-variant/30">
+                    <span class="material-symbols-outlined text-[20px] sm:text-[22px]" x-text="isDark ? 'light_mode' : 'dark_mode'"></span>
+                </button>
+
                 @auth
-                <x-dropdown align="right" width="48">
-                    <x-slot name="trigger">
-                        <button class="inline-flex items-center pl-2 pr-3 py-1.5 border border-primary/20 rounded-full text-[13px] font-semibold font-inter text-primary bg-primary/5 hover:bg-primary/10 transition ease-in-out duration-150 gap-2">
-                            <img src="{{ Auth::user()->display_picture }}" alt="Profile" class="h-6 w-6 rounded-full object-cover border border-primary/30 shadow-sm">
-                            
-                            <div>{{ explode(' ', Auth::user()?->name ?? 'Guest')[0] }}</div>
-                            <div class="-ml-1 flex items-center">
-                                <span class="material-symbols-outlined text-[18px]">expand_more</span>
-                            </div>
-                        </button>
-                    </x-slot>
-                    <x-slot name="content">
-                        <x-dropdown-link :href="route('profile.edit')" class="font-inter text-[13px]">
-                            {{ __('Profil Saya') }}
-                        </x-dropdown-link>
-                        <form method="POST" action="{{ route('logout') }}">
-                            @csrf
-                            <x-dropdown-link :href="route('logout')"
-                                onclick="event.preventDefault(); this.closest('form').submit();" class="font-inter text-[13px] text-error">
-                                {{ __('Log Out') }}
-                            </x-dropdown-link>
-                        </form>
-                    </x-slot>
-                </x-dropdown>
+                <!-- DROPDOWN PROFIL MODERN (Universal) -->
+                <div x-data="{ profileOpen: false }" class="relative ml-1">
+                    <!-- Trigger Button -->
+                    <button @click="profileOpen = !profileOpen" @click.outside="profileOpen = false" 
+                            class="inline-flex items-center pl-1 sm:pl-2 pr-1 sm:pr-3 py-1.5 border border-transparent sm:border-primary/20 rounded-full text-[13px] font-semibold font-inter text-primary bg-transparent sm:bg-primary/5 hover:bg-primary/10 transition-all duration-200 gap-1 sm:gap-2 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
+                            :class="profileOpen ? 'bg-primary/10 border-primary/40 ring-2 ring-primary/20' : ''">
+                        
+                        <img src="{{ Auth::user()->display_picture }}" alt="Profile" class="h-8 w-8 sm:h-7 sm:w-7 rounded-full object-cover border border-primary/30 shadow-sm">
+                        
+                        <!-- Nama User disembunyikan di Mobile -->
+                        <div class="hidden sm:block tracking-tight">{{ explode(' ', Auth::user()?->name ?? 'Guest')[0] }}</div>
+                        
+                        <!-- Panah Dropdown disembunyikan di Mobile -->
+                        <div class="hidden sm:flex -ml-1 items-center transition-transform duration-300 ease-out" :class="profileOpen ? 'rotate-180' : ''">
+                            <span class="material-symbols-outlined text-[18px]">expand_more</span>
+                        </div>
+                    </button>
+
+                    <!-- Dropdown Menu -->
+                    <div x-show="profileOpen" 
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 scale-95 translate-y-3"
+                         x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                         x-transition:leave-end="opacity-0 scale-95 translate-y-3"
+                         class="absolute right-0 mt-3 w-64 bg-surface border border-outline-variant/30 rounded-2xl shadow-xl premium-shadow overflow-hidden z-50 origin-top-right"
+                         style="display: none;">
+                         
+                         <!-- Dropdown Header (Info User) -->
+                         <div class="px-4 py-4 border-b border-outline-variant/30 bg-surface-container-lowest flex items-center gap-3">
+                             <img src="{{ Auth::user()->display_picture }}" alt="Profile" class="h-11 w-11 rounded-full object-cover border border-outline-variant/50 shadow-sm">
+                             <div class="overflow-hidden">
+                                 <p class="text-[14px] font-bold text-on-surface font-montserrat truncate">{{ Auth::user()->name }}</p>
+                                 <p class="text-[12px] font-medium text-on-surface-variant truncate mt-0.5">{{ Auth::user()->email }}</p>
+                             </div>
+                         </div>
+
+                         <!-- Dropdown Body (Links) -->
+                         <div class="p-2 space-y-1 bg-surface">
+                             <a href="{{ route('profile.edit') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-semibold font-inter text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-all">
+                                 <span class="material-symbols-outlined text-[20px]">manage_accounts</span>
+                                 Pengaturan Akun
+                             </a>
+                             
+                             <div class="h-px bg-outline-variant/30 my-1.5 mx-2"></div>
+                             
+                             <form method="POST" action="{{ route('logout') }}">
+                                 @csrf
+                                 <button type="submit" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-semibold font-inter text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all text-left">
+                                     <span class="material-symbols-outlined text-[20px]">logout</span>
+                                     Keluar
+                                 </button>
+                             </form>
+                         </div>
+                    </div>
+                </div>
                 @else
-                <div class="flex items-center gap-4">
+                <!-- Desktop Auth -->
+                <div class="hidden lg:flex items-center gap-4 ml-2 border-l border-outline-variant/30 pl-4">
                     <a href="{{ route('login') }}" class="text-[13px] font-semibold font-inter text-on-surface-variant hover:text-primary transition-colors py-1.5">
                         Login
                     </a>
@@ -63,58 +124,48 @@
                         Register
                     </a>
                 </div>
+                <!-- Mobile Auth Icon -->
+                <div class="flex lg:hidden items-center ml-1">
+                    <a href="{{ route('login') }}" class="text-primary hover:bg-primary/10 p-1.5 rounded-full transition-colors flex items-center justify-center border border-primary/30">
+                        <span class="material-symbols-outlined text-[20px]">login</span>
+                    </a>
+                </div>
                 @endauth
             </div>
-
-            <div class="flex items-center lg:hidden">
-                <button @click="open = ! open" class="text-primary hover:bg-primary/5 p-1.5 rounded-md transition-colors">
-                    <span class="material-symbols-outlined text-2xl" x-text="open ? 'close' : 'menu'">menu</span>
-                </button>
-            </div>
         </div>
-    </div>
-
-    <div x-show="open"
-        x-transition:enter="transition ease-out duration-200"
-        x-transition:enter-start="opacity-0 -translate-y-2"
-        x-transition:enter-end="opacity-100 translate-y-0"
-        class="lg:hidden bg-surface border-t border-outline-variant/30 shadow-lg absolute w-full left-0">
-
-        <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="font-inter text-[14px] font-semibold">Katalog Armada</x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('booking.index')" :active="request()->routeIs('booking.index')" class="font-inter text-[14px] font-semibold">Riwayat Pesanan</x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('driver.index')" :active="request()->routeIs('driver.index')" class="font-inter text-[14px] font-semibold">Driver Kami</x-responsive-nav-link>
-            <x-responsive-nav-link href="#" class="font-inter text-[14px] font-semibold">Tentang Perusahaan</x-responsive-nav-link>
-            <x-responsive-nav-link href="#" class="font-inter text-[14px] font-semibold">Layanan CS</x-responsive-nav-link>
-        </div>
-
-        @auth
-        <div class="pt-4 pb-4 border-t border-outline-variant/30 bg-surface-container">
-            <div class="px-4 flex items-center gap-3">
-                <img src="{{ Auth::user()->display_picture }}" alt="Profile" class="h-10 w-10 rounded-full object-cover border-2 border-primary/20 shadow-sm">
-                
-                <div>
-                    <div class="font-bold text-sm text-on-surface font-montserrat">{{ Auth::user()?->name ?? 'User' }}</div>
-                    <div class="font-medium text-xs text-on-surface-variant font-inter">{{ Auth::user()?->email ?? 'Email' }}</div>
-                </div>
-            </div>
-            <div class="mt-3 space-y-1">
-                <x-responsive-nav-link :href="route('profile.edit')" class="font-inter text-[14px]">Profil Saya</x-responsive-nav-link>
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <x-responsive-nav-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();" class="font-inter text-[14px] text-error">Log Out</x-responsive-nav-link>
-                </form>
-            </div>
-        </div>
-        @else
-        <div class="pt-4 pb-4 border-t border-outline-variant/30 px-4 flex gap-3">
-            <a href="{{ route('login') }}" class="flex-1 text-center font-inter text-[14px] font-semibold text-on-surface-variant hover:text-primary transition py-2 border border-outline-variant/50 rounded-lg">
-                Login
-            </a>
-            <a href="{{ route('register') }}" class="flex-1 text-center font-inter text-[14px] font-semibold text-white bg-primary hover:bg-primary/90 transition py-2 rounded-lg">
-                Register
-            </a>
-        </div>
-        @endauth
     </div>
 </nav>
+
+<!-- BOTTOM NAVIGATION BAR (KHUSUS MOBILE) -->
+<div class="lg:hidden fixed bottom-0 left-0 w-full bg-surface border-t border-outline-variant/30 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.3)] z-50 pb-safe transition-colors duration-300">
+    <div class="flex justify-around items-center px-1 py-2">
+        
+        <a href="{{ route('dashboard') }}" class="flex flex-col items-center gap-1 w-16 p-1 transition-colors {{ request()->routeIs('dashboard') ? 'text-primary' : 'text-on-surface-variant hover:text-primary' }}">
+            <span class="material-symbols-outlined text-[22px] {{ request()->routeIs('dashboard') ? 'icon-fill' : '' }}">directions_car</span>
+            <span class="text-[10px] font-semibold font-inter">Katalog</span>
+        </a>
+
+        @auth
+        <a href="{{ route('booking.index') }}" class="flex flex-col items-center gap-1 w-16 p-1 transition-colors {{ request()->routeIs('booking.index') ? 'text-primary' : 'text-on-surface-variant hover:text-primary' }}">
+            <span class="material-symbols-outlined text-[22px] {{ request()->routeIs('booking.index') ? 'icon-fill' : '' }}">history</span>
+            <span class="text-[10px] font-semibold font-inter">Riwayat</span>
+        </a>
+        @endauth
+
+        <a href="{{ route('driver.index') }}" class="flex flex-col items-center gap-1 w-16 p-1 transition-colors {{ request()->routeIs('driver.index') ? 'text-primary' : 'text-on-surface-variant hover:text-primary' }}">
+            <span class="material-symbols-outlined text-[22px] {{ request()->routeIs('driver.index') ? 'icon-fill' : '' }}">badge</span>
+            <span class="text-[10px] font-semibold font-inter">Driver</span>
+        </a>
+
+        <a href="{{ route('about') }}" class="flex flex-col items-center gap-1 w-16 p-1 transition-colors {{ request()->routeIs('about') ? 'text-primary' : 'text-on-surface-variant hover:text-primary' }}">
+            <span class="material-symbols-outlined text-[22px] {{ request()->routeIs('about') ? 'icon-fill' : '' }}">info</span>
+            <span class="text-[10px] font-semibold font-inter">Tentang</span>
+        </a>
+
+        <a href="{{ route('cs') }}" class="flex flex-col items-center gap-1 w-16 p-1 transition-colors {{ request()->routeIs('cs') ? 'text-primary' : 'text-on-surface-variant hover:text-primary' }}">
+            <span class="material-symbols-outlined text-[22px] {{ request()->routeIs('cs') ? 'icon-fill' : '' }}">support_agent</span>
+            <span class="text-[10px] font-semibold font-inter">Bantuan</span>
+        </a>
+
+    </div>
+</div>
