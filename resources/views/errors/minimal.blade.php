@@ -3,9 +3,8 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ config('app.name', 'KlikRental') }} - Masuk</title>
+        <title>@yield('title')</title>
 
         <script>
             if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -17,9 +16,6 @@
 
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Inter:wght@400;600&display=swap" rel="stylesheet" />
-        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
-
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
 
         <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
         <script id="tailwind-config">
@@ -30,12 +26,8 @@
                         colors: {
                             "primary": "var(--color-primary)",
                             "secondary": "var(--color-secondary)",
-                            "forest-green": "var(--color-forest-green)",
-                            "forest-light": "var(--color-forest-light)",
                             "background": "var(--color-background)",
                             "surface": "var(--color-surface)",
-                            "surface-container-lowest": "var(--color-surface-container-lowest)",
-                            "surface-container": "var(--color-surface-container)",
                             "on-surface": "var(--color-on-surface)",
                             "on-surface-variant": "var(--color-on-surface-variant)",
                             "outline-variant": "var(--color-outline-variant)",
@@ -50,59 +42,39 @@
         </script>
 
         <style>
-            /* TEMA LIGHT (Terang) */
             :root {
                 --color-primary: #6D5EF7;
                 --color-secondary: #3B82F6;
-                --color-forest-green: #476428;
-                --color-forest-light: #f1f6ed;
                 --color-background: #F9F9FB;
                 --color-surface: #FFFFFF;
-                --color-surface-container-lowest: #FFFFFF;
-                --color-surface-container: #F3F3F5;
                 --color-on-surface: #1A1C1D;
                 --color-on-surface-variant: #44483D;
                 --color-outline-variant: #C4C8B9;
             }
 
-            /* TEMA DARK (Gelap) */
             .dark {
                 --color-primary: #8174f8;
                 --color-secondary: #60a5fa;
-                --color-forest-green: #8cd95c;
-                --color-forest-light: #162411;
                 --color-background: #0f1115;
                 --color-surface: #1a1d21;
-                --color-surface-container-lowest: #14171a;
-                --color-surface-container: #262a2f;
                 --color-on-surface: #f1f5f9;
                 --color-on-surface-variant: #94a3b8;
                 --color-outline-variant: #334155;
             }
-
-            html {
-                scroll-behavior: smooth;
-            }
-
-            .premium-shadow {
-                box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.04);
-            }
-
-            .dark .premium-shadow {
-                box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.2);
-            }
         </style>
     </head>
-    <body class="font-inter text-on-surface antialiased bg-background transition-colors duration-300">
-        <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0">
-            <div>
-                <a href="/">
-                    <span class="font-montserrat text-3xl font-bold text-primary">KlikRental</span>
-                </a>
-            </div>
+    <body class="antialiased bg-background text-on-surface font-inter transition-colors duration-300">
+        <div class="relative flex items-top justify-center min-h-screen bg-background sm:items-center sm:pt-0">
+            <div class="max-w-xl mx-auto sm:px-6 lg:px-8">
+                <div class="flex items-center pt-8 sm:justify-start sm:pt-0">
+                    <h1 class="px-4 text-3xl font-montserrat font-bold text-primary border-r border-outline-variant/60 tracking-wider">
+                        @yield('code')
+                    </h1>
 
-            <div class="w-full sm:max-w-md mt-6 px-6 py-8 bg-surface premium-shadow overflow-hidden sm:rounded-2xl border border-outline-variant/30 transition-colors duration-300">
-                {{ $slot }}
+                    <div class="ml-4 text-lg font-inter text-on-surface-variant uppercase tracking-wider">
+                        @yield('message')
+                    </div>
+                </div>
             </div>
         </div>
     </body>

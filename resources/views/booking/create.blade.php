@@ -37,8 +37,66 @@
         }
 
         .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #dcd8e5;
+            background: var(--color-outline-variant);
             border-radius: 10px;
+        }
+
+        /* ================================================== */
+        /* FLATPICKR DARK MODE OVERRIDE                       */
+        /* ================================================== */
+        .dark .flatpickr-calendar {
+            background: var(--color-surface) !important;
+            border: 1px solid var(--color-outline-variant) !important;
+            box-shadow: 0px 20px 25px -5px rgba(0, 0, 0, 0.5) !important;
+        }
+        .dark .flatpickr-months .flatpickr-month,
+        .dark .flatpickr-current-month .flatpickr-monthDropdown-months,
+        .dark .flatpickr-weekday {
+            background: var(--color-surface) !important;
+            color: var(--color-on-surface) !important;
+        }
+        .dark .flatpickr-prev-month svg, 
+        .dark .flatpickr-next-month svg {
+            fill: var(--color-on-surface) !important;
+        }
+        .dark .flatpickr-prev-month:hover svg, 
+        .dark .flatpickr-next-month:hover svg {
+            fill: var(--color-primary) !important;
+        }
+        .dark .flatpickr-day {
+            color: var(--color-on-surface) !important;
+        }
+        .dark .flatpickr-day:hover, 
+        .dark .flatpickr-day.prevMonthDay:hover, 
+        .dark .flatpickr-day.nextMonthDay:hover {
+            background: var(--color-surface-container) !important;
+            border-color: var(--color-surface-container) !important;
+        }
+        .dark .flatpickr-day.selected {
+            background: var(--color-primary) !important;
+            border-color: var(--color-primary) !important;
+            color: #ffffff !important;
+        }
+        .dark .flatpickr-day.flatpickr-disabled {
+            color: var(--color-on-surface-variant) !important;
+            opacity: 0.3 !important;
+        }
+        .dark .flatpickr-time {
+            border-top-color: var(--color-outline-variant) !important;
+        }
+        .dark .numInputWrapper span.arrowUp:after {
+            border-bottom-color: var(--color-on-surface) !important;
+        }
+        .dark .numInputWrapper span.arrowDown:after {
+            border-top-color: var(--color-on-surface) !important;
+        }
+        .dark .flatpickr-time input, 
+        .dark .flatpickr-time .flatpickr-am-pm {
+            color: var(--color-on-surface) !important;
+        }
+        .dark .flatpickr-time input:hover, 
+        .dark .flatpickr-time .flatpickr-am-pm:hover {
+            background: var(--color-surface-container) !important;
         }
     </style>
 
@@ -58,17 +116,14 @@
             <h1 class="font-montserrat text-3xl font-bold text-on-surface">Form Penyewaan Mobil</h1>
             <p class="font-inter text-on-surface-variant mt-2 text-lg">
                 Sewa <span class="font-bold text-primary">{{ $vehicle->name }}</span>
-                <span class="text-on-surface/50 font-normal">| Rp {{ number_format($vehicle->price_per_day, 0, ',', '.') }} per hari</span>
+                <span class="text-on-surface-variant/70 font-normal">| Rp {{ number_format($vehicle->price_per_day, 0, ',', '.') }} per hari</span>
             </p>
         </div>
 
-        <!-- PERUBAHAN: Tambahan event @submit.prevent untuk mencegat submit form jika nomor WA kosong -->
         <form action="{{ route('booking.store') }}" method="POST" id="bookingForm" class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start"
               @submit.prevent="if(!userPhone || userPhone.trim() === '') { showPhoneModal = true; } else { $el.submit(); }">
             @csrf
             <input type="hidden" name="vehicle_id" value="{{ $vehicle->id }}">
-            
-            <!-- PERUBAHAN: Input Hidden untuk Nomor WA -->
             <input type="hidden" name="phone_number" x-model="userPhone">
 
             <!-- Kolom Kiri: Input Data -->
@@ -80,22 +135,24 @@
                         <label class="font-inter font-semibold text-[13px] text-on-surface-variant mb-1.5 block">Tgl & Jam Ambil</label>
                         <div class="relative">
                             <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-primary text-[20px] z-10">calendar_today</span>
+                            <!-- EDIT: bg-white dihapus, diganti bg-surface-container-lowest -->
                             <input type="text" name="start_date" id="start_date" required placeholder="YYYY-MM-DD HH:MM" data-min-date="{{ date('Y-m-d H:i') }}"
-                                class="datetime-picker w-full bg-surface border border-outline-variant/50 rounded-xl py-2.5 pl-10 pr-4 text-[14px] text-on-surface focus:border-primary focus:ring-0 outline-none transition-all cursor-pointer bg-white">
+                                class="datetime-picker w-full bg-surface-container-lowest border border-outline-variant/50 rounded-xl py-2.5 pl-10 pr-4 text-[14px] text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all cursor-pointer">
                         </div>
                     </div>
                     <div>
                         <label class="font-inter font-semibold text-[13px] text-on-surface-variant mb-1.5 block">Tgl & Jam Kembali</label>
                         <div class="relative">
                             <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-primary text-[20px] z-10">event_busy</span>
+                            <!-- EDIT: bg-white dihapus, diganti bg-surface-container-lowest -->
                             <input type="text" name="end_date" id="end_date" required placeholder="YYYY-MM-DD HH:MM" data-min-date="{{ date('Y-m-d H:i') }}"
-                                class="datetime-picker w-full bg-surface border border-outline-variant/50 rounded-xl py-2.5 pl-10 pr-4 text-[14px] text-on-surface focus:border-primary focus:ring-0 outline-none transition-all cursor-pointer bg-white">
+                                class="datetime-picker w-full bg-surface-container-lowest border border-outline-variant/50 rounded-xl py-2.5 pl-10 pr-4 text-[14px] text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all cursor-pointer">
                         </div>
                     </div>
                 </div>
 
                 <!-- Zona Jemput & Kembali -->
-                @php $selectClass = "w-full bg-surface border border-outline-variant/50 rounded-xl py-2.5 pl-10 pr-10 text-[14px] text-on-surface focus:border-primary focus:ring-0 outline-none appearance-none cursor-pointer bg-none transition-all"; @endphp
+                @php $selectClass = "w-full bg-surface-container-lowest border border-outline-variant/50 rounded-xl py-2.5 pl-10 pr-10 text-[14px] text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none appearance-none cursor-pointer bg-none transition-all"; @endphp
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="font-inter font-semibold text-[13px] text-on-surface-variant mb-1.5 block">Zona Penjemputan</label>
@@ -121,14 +178,11 @@
                     </div>
                 </div>
 
-                <!-- OPSI SUPIR MENGGUNAKAN TRIGGER MODAL -->
+                <!-- OPSI SUPIR -->
                 <div>
                     <label class="font-inter font-semibold text-[13px] text-on-surface-variant mb-1.5 block">Opsi Supir</label>
-                    <!-- Input Hidden yang akan di-submit -->
                     <input type="hidden" name="driver_id" id="driver_input" x-model="driverId">
-
-                    <!-- Tombol Trigger Buka Modal -->
-                    <button type="button" @click="showDriverModal = true" class="w-full bg-surface border border-outline-variant/50 rounded-xl p-3 flex justify-between items-center hover:border-primary/50 transition-all group text-left">
+                    <button type="button" @click="showDriverModal = true" class="w-full bg-surface-container-lowest border border-outline-variant/50 rounded-xl p-3 flex justify-between items-center hover:border-primary/50 transition-all group text-left">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                                 <span class="material-symbols-outlined text-primary text-[20px]">person_check</span>
@@ -148,13 +202,14 @@
                     <div class="relative">
                         <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-primary text-[20px]">local_offer</span>
                         <input type="text" name="promo_code" id="promo_code" placeholder="Masukkan kode promo jika ada..."
-                            class="w-full bg-surface border border-outline-variant/50 rounded-xl py-2.5 pl-10 pr-4 text-[14px] text-on-surface focus:border-primary focus:ring-0 outline-none transition-all">
+                            class="w-full bg-surface-container-lowest border border-outline-variant/50 rounded-xl py-2.5 pl-10 pr-4 text-[14px] text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all">
                     </div>
                 </div>
             </div>
 
             <!-- Kolom Kanan: Rincian Tagihan -->
-            <div class="glass-panel p-5 md:p-6 rounded-2xl border border-outline-variant/30 h-max sticky top-24 premium-shadow">
+            <!-- EDIT: glass-panel dihapus, diganti bg-surface/80 backdrop-blur-xl agar mengikuti Dark Mode variables -->
+            <div class="bg-surface/80 backdrop-blur-xl p-5 md:p-6 rounded-2xl border border-outline-variant/30 h-max sticky top-24 premium-shadow">
                 <h3 class="font-montserrat font-bold text-[16px] text-on-surface mb-4 pb-2 border-b border-outline-variant/30 flex items-center gap-2">
                     <span class="material-symbols-outlined text-primary text-[20px]">receipt_long</span> Rincian Tagihan
                 </h3>
@@ -199,8 +254,9 @@
                     </div>
                 </div>
                 
-                <div class="mt-4 flex items-start gap-2 p-3 rounded-xl bg-error/5 border border-error/20">
-                    <span class="material-symbols-outlined text-[16px] text-error mt-0.5">warning</span>
+                <!-- EDIT: bg-error di-adjust agar enak dipandang saat Dark Mode -->
+                <div class="mt-4 flex items-start gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/30">
+                    <span class="material-symbols-outlined text-[16px] text-red-600 mt-0.5">warning</span>
                     <p class="font-inter text-[11px] text-on-surface-variant leading-relaxed">
                         <strong class="text-on-surface font-semibold">Catatan Penting:</strong> Total tagihan belum termasuk biaya tambahan jika terjadi <strong>keterlambatan, kerusakan fisik kendaraan (lecet/penyok), kendala kebersihan, atau kehilangan aksesori</strong> selama masa sewa sesuai Syarat & Ketentuan.
                     </p>
@@ -216,10 +272,8 @@
         <!-- MODAL POPUP CENTER DRIVER SELECTION            -->
         <!-- ============================================== -->
         <div x-show="showDriverModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6" style="display: none;">
-            <!-- Backdrop -->
             <div x-show="showDriverModal" x-transition.opacity class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="showDriverModal = false"></div>
 
-            <!-- Modal Content -->
             <div x-show="showDriverModal"
                 x-transition:enter="transition ease-out duration-300"
                 x-transition:enter-start="opacity-0 translate-y-8 scale-95"
@@ -234,7 +288,7 @@
                         <h3 class="font-montserrat font-bold text-lg text-on-surface">Pilih Opsi Pengemudi</h3>
                         <p class="font-inter text-[12px] text-on-surface-variant">Harga akan ditambahkan ke total sewa per hari.</p>
                     </div>
-                    <button @click="showDriverModal = false" type="button" class="w-8 h-8 flex items-center justify-center rounded-full bg-surface border border-outline-variant text-on-surface-variant hover:text-error hover:border-error/30 transition-all">
+                    <button @click="showDriverModal = false" type="button" class="w-8 h-8 flex items-center justify-center rounded-full bg-surface-container-lowest border border-outline-variant text-on-surface-variant hover:text-red-600 hover:border-red-600/30 transition-all">
                         <span class="material-symbols-outlined text-[20px]">close</span>
                     </button>
                 </div>
@@ -274,7 +328,7 @@
                                 <h4 class="font-montserrat font-bold text-[15px] text-on-surface line-clamp-1">{{ $driver->name }}</h4>
 
                                 <div class="flex items-center gap-2 mt-1 mb-1.5">
-                                    <div class="flex items-center gap-1 bg-[#FFF8E7] text-[#B87503] px-1.5 py-0.5 rounded text-[10px] font-bold">
+                                    <div class="flex items-center gap-1 bg-[#FFF8E7] dark:bg-[#B87503]/20 text-[#B87503] dark:text-[#FBBF24] px-1.5 py-0.5 rounded text-[10px] font-bold">
                                         <span class="material-symbols-outlined icon-fill text-[12px]">star</span>
                                         {{ number_format($driver->reviews_avg_driver_rating ?? 5.0, 1) }}
                                     </div>
@@ -317,7 +371,7 @@
 
                 <div class="p-5 border-b border-outline-variant/30 flex justify-between items-center bg-surface-container/50">
                     <h3 class="font-montserrat font-bold text-lg text-on-surface">Lengkapi Profil Anda</h3>
-                    <button @click="showPhoneModal = false" type="button" class="w-8 h-8 flex items-center justify-center rounded-full bg-surface border border-outline-variant text-on-surface-variant hover:text-error hover:border-error/30 transition-all">
+                    <button @click="showPhoneModal = false" type="button" class="w-8 h-8 flex items-center justify-center rounded-full bg-surface-container-lowest border border-outline-variant text-on-surface-variant hover:text-red-600 hover:border-red-600/30 transition-all">
                         <span class="material-symbols-outlined text-[20px]">close</span>
                     </button>
                 </div>
@@ -332,15 +386,15 @@
 
                     <div>
                         <label class="font-inter font-semibold text-[13px] text-on-surface-variant mb-1.5 block">
-                            Nomor WhatsApp <span class="text-error">*</span>
+                            Nomor WhatsApp <span class="text-red-600">*</span>
                         </label>
                         <div class="relative">
                             <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-primary text-[20px]">call</span>
                             <input type="tel" x-model="userPhone" placeholder="Contoh: 081234567890" required
-                                class="w-full bg-surface border @error('phone_number') border-error @else border-outline-variant/50 @enderror rounded-xl py-2.5 pl-10 pr-4 text-[14px] text-on-surface focus:border-primary focus:ring-0 outline-none transition-all">
+                                class="w-full bg-surface-container-lowest border @error('phone_number') border-red-600 focus:border-red-600 focus:ring-red-600 @else border-outline-variant/50 focus:border-primary focus:ring-primary @enderror rounded-xl py-2.5 pl-10 pr-4 text-[14px] text-on-surface focus:ring-1 outline-none transition-all">
                         </div>
                         @error('phone_number')
-                            <p class="text-error text-[11px] mt-1.5 font-inter font-medium flex items-center gap-1">
+                            <p class="text-red-600 text-[11px] mt-1.5 font-inter font-medium flex items-center gap-1">
                                 <span class="material-symbols-outlined text-[14px]">error</span>{{ $message }}
                             </p>
                         @enderror
@@ -348,7 +402,7 @@
                 </div>
 
                 <div class="p-5 border-t border-outline-variant/30 bg-surface-container/30 flex justify-end gap-3">
-                    <button type="button" @click="showPhoneModal = false" class="px-4 py-2 text-[13px] font-bold font-inter text-on-surface-variant hover:bg-surface-container rounded-xl transition-all">Batal</button>
+                    <button type="button" @click="showPhoneModal = false" class="px-4 py-2 text-[13px] font-bold font-inter text-on-surface-variant hover:bg-surface-container border border-transparent hover:border-outline-variant/30 rounded-xl transition-all">Batal</button>
                     <!-- Tombol ini memicu submit form utama setelah mengisi data -->
                     <button type="button" @click="if(userPhone && userPhone.trim() !== '') { showPhoneModal = false; $nextTick(() => document.getElementById('bookingForm').submit()); }" 
                         class="px-5 py-2 text-[13px] font-bold font-inter text-white bg-primary rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center gap-1">
@@ -431,7 +485,6 @@
 
             // Deklarasi Variabel DOM
             const form = document.getElementById('bookingForm');
-            // PERUBAHAN: Jangan re-trigger kalkulasi kalau inputnya dari modal phone number (type hidden)
             const inputs = form.querySelectorAll('input:not(#driver_input):not([name="phone_number"]), select');
             const btnSubmit = document.getElementById('btn-submit');
 
@@ -466,7 +519,6 @@
                 resizeTimer = setTimeout(adjustPriceFontSize, 50);
             });
 
-            // Expose function agar bisa dipanggil dari Click Alpine Modal
             window.triggerCalc = function() {
                 setTimeout(calculatePrice, 100);
             };
@@ -499,12 +551,13 @@
                             if (document.getElementById('promo_code').value.trim() !== '') {
                                 elPromoMsg.innerText = data.promo_message;
                                 if (data.promo_valid) {
-                                    elPromoMsg.style.color = '#476428';
+                                    // Gunakan class bawaan Tailwind untuk text color agar kompatibel dark mode
+                                    elPromoMsg.className = "text-[12px] font-medium transition-all duration-300 text-green-600 dark:text-green-500 mt-2";
                                     promoRow.style.display = 'flex';
                                     elPromoLabel.innerText = `Diskon Promo (${data.promo_percentage}%):`;
                                     elPromoDiscount.innerText = data.promo_discount;
                                 } else {
-                                    elPromoMsg.style.color = '#ef4444';
+                                    elPromoMsg.className = "text-[12px] font-medium transition-all duration-300 text-red-600 dark:text-red-400 mt-2";
                                     promoRow.style.display = 'none';
                                 }
                             } else {
@@ -523,14 +576,13 @@
                             elTotalPrice.innerText = 'Rp 0';
                             promoRow.style.display = 'none';
                             elPromoMsg.innerText = data.message || '';
-                            elPromoMsg.style.color = '#ef4444';
+                            elPromoMsg.className = "text-[12px] font-medium transition-all duration-300 text-red-600 dark:text-red-400 mt-2";
                             btnSubmit.disabled = true;
                         }
                         setTimeout(adjustPriceFontSize, 50);
                     })
                     .catch(error => console.error('Error:', error));
             }
-            // Dengarkan perubahan pada input selain hidden modal
             inputs.forEach(input => {
                 input.addEventListener('change', calculatePrice);
                 input.addEventListener('keyup', calculatePrice);

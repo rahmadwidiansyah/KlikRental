@@ -43,14 +43,17 @@
         </div>
     </section>
 
+    <!-- Gunakan url()->current() agar form fleksibel di route mana pun -->
     <section class="relative -mt-6 z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <form action="{{ route('dashboard') }}" method="GET" class="bg-white rounded-2xl p-4 md:p-5 shadow-lg border border-outline-variant/30 flex flex-col md:flex-row gap-3 items-end w-full">
+        <!-- EDIT: bg-white diubah menjadi bg-surface agar support Dark Mode -->
+        <form action="{{ url()->current() }}" method="GET" class="bg-surface rounded-2xl p-4 md:p-5 shadow-lg border border-outline-variant/30 flex flex-col md:flex-row gap-3 items-end w-full premium-shadow">
             
             <div class="w-full">
                 <label for="zone_id" class="font-inter font-semibold text-[13px] text-on-surface mb-1.5 block">Penjemputan</label>
                 <div class="relative">
                     <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-primary text-[20px] z-10">location_on</span>
-                    <select name="zone_id" class="w-full bg-surface border border-outline-variant/50 rounded-xl py-2.5 pl-10 pr-8 text-[14px]">
+                    <!-- EDIT: bg-surface diubah ke bg-surface-container-lowest agar kontras dengan form background -->
+                    <select name="zone_id" class="w-full bg-surface-container-lowest border border-outline-variant/50 rounded-xl py-2.5 pl-10 pr-8 text-[14px] text-on-surface transition-colors focus:border-primary focus:ring-1 focus:ring-primary">
                         <option value="">Semua Lokasi</option>
                         @foreach($zones ?? [] as $zone)
                         <option value="{{ $zone->id }}" {{ request('zone_id') == $zone->id ? 'selected' : '' }}>{{ $zone->zone_name }}</option>
@@ -63,14 +66,14 @@
                 <label for="start_date" class="font-inter font-semibold text-[13px] text-on-surface mb-1.5 block">Tgl Ambil</label>
                 <div class="relative">
                     <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-primary text-[20px]">calendar_today</span>
-                    <input type="date" name="start_date" value="{{ request('start_date') }}" min="{{ date('Y-m-d') }}" class="w-full bg-surface border border-outline-variant/50 rounded-xl py-2.5 pl-10 pr-3 text-[14px]" />
+                    <input type="date" name="start_date" value="{{ request('start_date') }}" min="{{ date('Y-m-d') }}" class="w-full bg-surface-container-lowest border border-outline-variant/50 rounded-xl py-2.5 pl-10 pr-3 text-[14px] text-on-surface transition-colors focus:border-primary focus:ring-1 focus:ring-primary" />
                 </div>
             </div>
             <div class="w-full">
                 <label for="end_date" class="font-inter font-semibold text-[13px] text-on-surface mb-1.5 block">Tgl Kembali</label>
                 <div class="relative">
                     <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-primary text-[20px]">event_busy</span>
-                    <input type="date" name="end_date" value="{{ request('end_date') }}" min="{{ date('Y-m-d') }}" class="w-full bg-surface border border-outline-variant/50 rounded-xl py-2.5 pl-10 pr-3 text-[14px]" />
+                    <input type="date" name="end_date" value="{{ request('end_date') }}" min="{{ date('Y-m-d') }}" class="w-full bg-surface-container-lowest border border-outline-variant/50 rounded-xl py-2.5 pl-10 pr-3 text-[14px] text-on-surface transition-colors focus:border-primary focus:ring-1 focus:ring-primary" />
                 </div>
             </div>
 
@@ -78,7 +81,7 @@
                 <label for="class" class="font-inter font-semibold text-[13px] text-on-surface mb-1.5 block">Kelas</label>
                 <div class="relative">
                     <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-primary text-[20px] z-10">workspace_premium</span>
-                    <select name="class" class="w-full bg-surface border border-outline-variant/50 rounded-xl py-2.5 pl-10 pr-8 text-[14px]">
+                    <select name="class" class="w-full bg-surface-container-lowest border border-outline-variant/50 rounded-xl py-2.5 pl-10 pr-8 text-[14px] text-on-surface transition-colors focus:border-primary focus:ring-1 focus:ring-primary">
                         <option value="all">Semua Kelas</option>
                         <option value="VIP" {{ request('class') == 'VIP' ? 'selected' : '' }}>VIP</option>
                         <option value="Premium" {{ request('class') == 'Premium' ? 'selected' : '' }}>Premium</option>
@@ -87,12 +90,13 @@
                 </div>
             </div>
 
-            <button type="submit" class="w-full md:w-auto bg-primary text-white font-inter font-bold text-[14px] py-2.5 px-6 rounded-xl hover:bg-primary/90 transition-all flex items-center justify-center gap-1.5">
+            <button type="submit" class="w-full md:w-auto bg-primary text-white font-inter font-bold text-[14px] py-2.5 px-6 rounded-xl hover:bg-primary/90 transition-all flex items-center justify-center gap-1.5 shadow-md">
                 <span class="material-symbols-outlined text-[20px]">search</span> Cari
             </button>
             
             @if(request()->anyFilled(['start_date', 'zone_id', 'class', 'type']))
-                <a href="{{ route('dashboard') }}" class="w-full md:w-auto bg-surface-container text-on-surface-variant font-inter font-bold text-[14px] py-2.5 px-4 rounded-xl border transition-all flex items-center justify-center">
+                <!-- Ubah rute reset di sini -->
+                <a href="{{ url()->current() }}" class="w-full md:w-auto bg-surface-container text-on-surface-variant font-inter font-bold text-[14px] py-2.5 px-4 rounded-xl border border-outline-variant/40 hover:bg-outline-variant/20 transition-all flex items-center justify-center">
                     <span class="material-symbols-outlined text-[20px]">close</span>
                 </a>
             @endif
@@ -103,13 +107,13 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             
             @if(isset($groupedVehicles) && $groupedVehicles->isEmpty())
-                <div class="bg-error-container text-on-error-container p-5 rounded-xl font-inter flex flex-col items-center text-center gap-3 border">
-                    <span class="material-symbols-outlined text-[40px] text-error">car_crash</span>
+                <div class="bg-red-50 dark:bg-red-900/10 text-red-600 p-5 rounded-xl font-inter flex flex-col items-center text-center gap-3 border border-red-200 dark:border-red-900/30">
+                    <span class="material-symbols-outlined text-[40px] text-red-500">car_crash</span>
                     <div>
                         <h3 class="font-bold text-[16px] mb-1">Armada Tidak Ditemukan</h3>
                         <p class="text-[14px]">Maaf, armada dengan kriteria tersebut sedang tidak tersedia.</p>
                     </div>
-                    <a href="{{ route('dashboard') }}" class="mt-2 text-primary font-semibold hover:underline">Hapus Filter</a>
+                    <a href="{{ url()->current() }}" class="mt-2 text-primary font-semibold hover:underline">Hapus Filter</a>
                 </div>
             @else
                 @foreach(['VIP', 'Premium', 'Standard'] as $className)
@@ -135,20 +139,20 @@
                                         
                                         @if(isset($car->is_booked_today) && $car->is_booked_today)
                                         <div class="absolute top-3 right-3 z-10">
-                                            <span class="bg-red-50 text-red-600 border border-red-200 px-2.5 py-0.5 rounded-full font-inter font-bold text-[10px] flex items-center gap-1">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse"></span> Disewa
+                                            <span class="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 px-2.5 py-0.5 rounded-full font-inter font-bold text-[10px] flex items-center gap-1">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-red-600 dark:bg-red-400 animate-pulse"></span> Disewa
                                             </span>
                                         </div>
                                         @elseif($car->status === 'maintenance')
                                         <div class="absolute top-3 right-3 z-10">
-                                            <span class="bg-red-100 text-red-600 border border-red-200 px-2.5 py-0.5 rounded-full font-inter font-bold text-[10px] flex items-center gap-1">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-red-600"></span> Perawatan
+                                            <span class="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 px-2.5 py-0.5 rounded-full font-inter font-bold text-[10px] flex items-center gap-1">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-red-600 dark:bg-red-400"></span> Perawatan
                                             </span>
                                         </div>
                                         @elseif($car->status === 'rented')
                                         <div class="absolute top-3 right-3 z-10">
-                                            <span class="bg-blue-100 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-full font-inter font-bold text-[10px] flex items-center gap-1">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span> Disewa
+                                            <span class="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-900/50 px-2.5 py-0.5 rounded-full font-inter font-bold text-[10px] flex items-center gap-1">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse"></span> Disewa
                                             </span>
                                         </div>
                                         @else
@@ -334,7 +338,8 @@
                                             </p>
                                         </div>
                                     </div>
-                                    <div class="flex text-[#B87503] gap-0.5 bg-[#FFF8E7] px-1.5 py-0.5 rounded">
+                                    <!-- EDIT: Ditambahkan class dark:bg-[#B87503]/20 dark:text-[#FBBF24] untuk Dark Mode -->
+                                    <div class="flex text-[#B87503] dark:text-[#FBBF24] gap-0.5 bg-[#FFF8E7] dark:bg-[#B87503]/20 px-1.5 py-0.5 rounded">
                                         <span class="material-symbols-outlined text-[14px] icon-fill">star</span>
                                         <span class="text-[12px] font-bold">{{ number_format($rev->vehicle_rating ?? 5, 1) }}</span>
                                     </div>
@@ -397,7 +402,7 @@
                     <div class="grid grid-cols-2 gap-4 bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/30">
                         <div>
                             <span class="font-inter text-[11px] text-on-surface-variant block mb-1">Kondisi Kendaraan</span>
-                            <div class="flex text-[#B87503] gap-0.5">
+                            <div class="flex text-[#B87503] dark:text-[#FBBF24] gap-0.5">
                                 <template x-for="i in 5">
                                     <span class="material-symbols-outlined text-[16px]" :class="i <= revVRating ? 'icon-fill' : 'text-outline-variant/30'">star</span>
                                 </template>
@@ -406,7 +411,7 @@
                         </div>
                         <div>
                             <span class="font-inter text-[11px] text-on-surface-variant block mb-1">Pelayanan KlikRental</span>
-                            <div class="flex text-[#B87503] gap-0.5">
+                            <div class="flex text-[#B87503] dark:text-[#FBBF24] gap-0.5">
                                 <template x-for="i in 5">
                                     <span class="material-symbols-outlined text-[16px]" :class="i <= revCRating ? 'icon-fill' : 'text-outline-variant/30'">star</span>
                                 </template>
