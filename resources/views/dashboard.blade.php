@@ -188,6 +188,7 @@
         </div>
     </section>
 
+    <!-- SECTION KEUNGGULAN & STATISTIK -->
     <section class="py-14 bg-surface-container-lowest border-y border-outline-variant/20 relative overflow-hidden">
         <div class="absolute top-0 left-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -ml-20 -mt-20"></div>
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -263,6 +264,8 @@
             </div>
         </div>
     </section>
+
+    <!-- SECTION REVIEW -->
     <div x-data="{ 
         showDetail: false, revName: '', revDate: '', revVehicle: '', 
         revVRating: 5, revCRating: 5, revComment: '', revAvatar: '' 
@@ -275,7 +278,6 @@
             </div>
 
             @php
-                // Tambahan fallback dummy avatar jika review kosong
                 $displayReviews = (isset($reviews) && $reviews->count() > 0) ? $reviews : collect([
                     (object)['user' => (object)['name' => 'Budi Santoso', 'avatar' => null], 'vehicle_rating' => 5, 'company_rating' => 5, 'comment' => 'Pelayanan sangat memuaskan! Mobil bersih dan mesinnya halus.', 'vehicle' => (object)['name' => 'Toyota Innova Zenix'], 'created_at' => now()->subDays(2)],
                     (object)['user' => (object)['name' => 'Siti Aisyah', 'avatar' => null], 'vehicle_rating' => 4, 'company_rating' => 5, 'comment' => 'Proses sewa gampang banget pakai face recognition. Mobilnya enak dipakai dan irit.', 'vehicle' => (object)['name' => 'Honda Brio RS'], 'created_at' => now()->subDays(5)],
@@ -291,8 +293,16 @@
                     @for($i = 0; $i < 2; $i++) 
                         @foreach($displayReviews as $rev)
                             @php
-                                // Cek kolom avatar (sesuaikan dengan nama kolom di database users kamu)
-                                $userAvatar = $rev->user->avatar ?? $rev->user->profile_photo_url ?? $rev->user->profile_photo_path ?? null;
+                                // --- 🚨 PERBAIKAN LOGIKA AVATAR 🚨 ---
+                                $userAvatar = null;
+                                $rawAvatar = $rev->user->avatar ?? $rev->user->profile_photo_url ?? $rev->user->profile_photo_path ?? null;
+                                
+                                // Deteksi cerdas: Apakah ini data asli dari database atau data dummy
+                                if (isset($rev->user) && is_object($rev->user) && method_exists($rev->user, 'getAttribute') && $rev->user->display_picture) {
+                                    $userAvatar = $rev->user->display_picture; // Gunakan fungsi pintar bawaan model User
+                                } elseif ($rawAvatar) {
+                                    $userAvatar = filter_var($rawAvatar, FILTER_VALIDATE_URL) ? $rawAvatar : Storage::url($rawAvatar);
+                                }
                             @endphp
                             
                             <div @click="
@@ -303,14 +313,14 @@
                                     revVRating = {{ $rev->vehicle_rating ?? 5 }};
                                     revCRating = {{ $rev->company_rating ?? 5 }};
                                     revComment = '{{ addslashes(str_replace(["\r", "\n"], ' ', $rev->comment ?? '')) }}';
-                                    revAvatar = '{{ $userAvatar }}';
+                                    revAvatar = '{{ $userAvatar ?? '' }}'; 
                                  " 
                                  class="w-[320px] md:w-[380px] bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-5 premium-shadow cursor-pointer hover:border-primary/50 hover:shadow-lg transition-all flex-shrink-0 flex flex-col">
                                 
                                 <div class="flex justify-between items-start mb-3">
                                     <div class="flex items-center gap-3">
                                         @if($userAvatar)
-                                            <img src="{{ filter_var($userAvatar, FILTER_VALIDATE_URL) ? $userAvatar : Storage::url($userAvatar) }}" alt="{{ $rev->user->name ?? 'User' }}" class="w-10 h-10 rounded-full object-cover shrink-0 border border-outline-variant/30 shadow-sm">
+                                            <img src="{{ $userAvatar }}" alt="{{ $rev->user->name ?? 'User' }}" class="w-10 h-10 rounded-full object-cover shrink-0 border border-outline-variant/30 shadow-sm">
                                         @else
                                             <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-[14px] uppercase shrink-0 border border-primary/20">
                                                 {{ substr($rev->user->name ?? 'A', 0, 1) }}
@@ -346,6 +356,7 @@
             </div>
         </section>
 
+        <!-- MODAL DETAIL ULASAN -->
         <div x-show="showDetail" 
              class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6" style="display: none;">
             
@@ -369,10 +380,10 @@
 
                 <div class="p-6 space-y-5">
                     <div class="flex items-center gap-4 border-b border-outline-variant/20 pb-4">
-                        <template x-if="revAvatar">
+                        <template x-if="revAvatar !== ''">
                             <img :src="revAvatar" alt="Avatar" class="w-12 h-12 rounded-full object-cover shrink-0 border border-outline-variant/30 shadow-sm">
                         </template>
-                        <template x-if="!revAvatar">
+                        <template x-if="revAvatar === ''">
                             <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-[18px] uppercase shrink-0 border border-primary/20" x-text="revName.charAt(0)">
                             </div>
                         </template>
