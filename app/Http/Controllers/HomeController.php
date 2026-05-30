@@ -17,8 +17,8 @@ class HomeController extends Controller
         // 1. Ambil data zona/lokasi yang aktif dari database
         $zones = Zone::where('is_active', true)->get();
 
-        // 2. Buat query dasar: hanya mobil yang secara fisik berstatus 'available'
-        $query = Vehicle::where('status', 'available');
+        // 2. Buat query dasar: (PERBAIKAN) Ambil semua status mobil agar badge 'Disewa' & 'Perawatan' bisa tampil di katalog frontend
+        $query = Vehicle::query();
 
         // 3. Filter berdasarkan Kategori (Type)
         if ($request->filled('type') && $request->type !== 'all') {
@@ -78,15 +78,22 @@ class HomeController extends Controller
             ->take(10)
             ->get();
 
+        // 9. TAMBAHAN BARU: Data Statistik untuk Section Keunggulan Layanan
+        $totalVehicles = Vehicle::count();
+        $totalBookings = Booking::whereNotIn('status', ['cancelled', 'pending'])->count(); // Hanya hitung pesanan yang sukses/jalan
+        $totalCustomers = Booking::distinct('user_id')->count(); // Hitung jumlah pelanggan unik
+
         // Kirim semua variabel ke view dashboard
-        return view('dashboard', compact('groupedVehicles', 'zones', 'reviews'));
+        return view('dashboard', compact('groupedVehicles', 'zones', 'reviews', 'totalVehicles', 'totalBookings', 'totalCustomers'));
     }
 
     // Method Baru untuk Halaman "Lihat Semua" (Katalog List Biasa dengan Paginasi)
     public function indexVehicle(Request $request)
     {
         $zones = Zone::where('is_active', true)->get();
-        $query = Vehicle::where('status', 'available')->with('primaryImage');
+        
+        // (PERBAIKAN) Hapus filter status available agar selaras dengan dashboard
+        $query = Vehicle::with('primaryImage');
 
         // Jika tombol "Lihat Semua" ditekan dari salah satu kelas, langsung filter kelasnya
         if ($request->filled('class') && $request->class !== 'all') {

@@ -139,6 +139,18 @@
                                                 <span class="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse"></span> Disewa
                                             </span>
                                         </div>
+                                        @elseif($car->status === 'maintenance')
+                                        <div class="absolute top-3 right-3 z-10">
+                                            <span class="bg-red-100 text-red-600 border border-red-200 px-2.5 py-0.5 rounded-full font-inter font-bold text-[10px] flex items-center gap-1">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-red-600"></span> Perawatan
+                                            </span>
+                                        </div>
+                                        @elseif($car->status === 'rented')
+                                        <div class="absolute top-3 right-3 z-10">
+                                            <span class="bg-blue-100 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-full font-inter font-bold text-[10px] flex items-center gap-1">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span> Disewa
+                                            </span>
+                                        </div>
                                         @else
                                         <div class="absolute top-3 right-3 z-10">
                                             <span class="bg-forest-light text-forest-green border border-forest-green/20 px-2.5 py-0.5 rounded-full font-inter font-bold text-[10px] flex items-center gap-1">
@@ -176,12 +188,87 @@
         </div>
     </section>
 
+    <section class="py-14 bg-surface-container-lowest border-y border-outline-variant/20 relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -ml-20 -mt-20"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                
+                <div>
+                    <h2 class="font-montserrat text-[26px] md:text-[32px] font-bold text-on-surface mb-4">Kenapa Memilih <span class="text-primary">KlikRental</span>?</h2>
+                    <p class="font-inter text-[15px] text-on-surface-variant mb-8 leading-relaxed">
+                        Kami berkomitmen memberikan pengalaman sewa mobil yang aman, nyaman, dan transparan. Nikmati berbagai kemudahan yang dirancang khusus untuk kelancaran perjalanan Anda.
+                    </p>
+                    
+                    <div class="space-y-6">
+                        <div class="flex gap-4 items-start">
+                            <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 text-primary mt-1 border border-primary/20 shadow-sm">
+                                <span class="material-symbols-outlined text-[24px]">verified_user</span>
+                            </div>
+                            <div>
+                                <h4 class="font-montserrat font-bold text-[16px] text-on-surface">Armada Terawat & Tersertifikasi</h4>
+                                <p class="font-inter text-[13px] text-on-surface-variant mt-1.5 leading-relaxed">Setiap kendaraan melewati inspeksi rutin bengkel resmi untuk menjamin performa, keselamatan, dan kebersihan maksimal.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4 items-start">
+                            <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 text-primary mt-1 border border-primary/20 shadow-sm">
+                                <span class="material-symbols-outlined text-[24px]">support_agent</span>
+                            </div>
+                            <div>
+                                <h4 class="font-montserrat font-bold text-[16px] text-on-surface">Layanan Pelanggan 24/7</h4>
+                                <p class="font-inter text-[13px] text-on-surface-variant mt-1.5 leading-relaxed">Tim operasional kami selalu siap sedia membantu Anda kapan saja, mulai dari proses pemesanan hingga perjalanan Anda selesai.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4 items-start">
+                            <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 text-primary mt-1 border border-primary/20 shadow-sm">
+                                <span class="material-symbols-outlined text-[24px]">price_check</span>
+                            </div>
+                            <div>
+                                <h4 class="font-montserrat font-bold text-[16px] text-on-surface">Harga Transparan Tanpa Jebakan</h4>
+                                <p class="font-inter text-[13px] text-on-surface-variant mt-1.5 leading-relaxed">Tidak ada biaya tersembunyi. Anda hanya membayar harga pasti yang tertera di layar ponsel Anda saat melakukan pemesanan.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 md:gap-5">
+                    <div class="bg-surface border border-outline-variant/40 p-6 md:p-8 rounded-2xl premium-shadow text-center flex flex-col justify-center transition-transform hover:-translate-y-1 duration-300">
+                        <div class="w-14 h-14 mx-auto bg-surface-container rounded-full flex items-center justify-center mb-3 text-primary">
+                            <span class="material-symbols-outlined text-[28px]">directions_car</span>
+                        </div>
+                        <h3 class="font-montserrat font-bold text-3xl md:text-4xl text-on-surface">{{ $totalVehicles ?? 0 }}+</h3>
+                        <p class="font-inter text-[13px] text-on-surface-variant mt-1.5 font-medium">Pilihan Armada</p>
+                    </div>
+                    <div class="bg-surface border border-outline-variant/40 p-6 md:p-8 rounded-2xl premium-shadow text-center flex flex-col justify-center transition-transform hover:-translate-y-1 duration-300">
+                        <div class="w-14 h-14 mx-auto bg-surface-container rounded-full flex items-center justify-center mb-3 text-primary">
+                            <span class="material-symbols-outlined text-[28px]">task_alt</span>
+                        </div>
+                        <h3 class="font-montserrat font-bold text-3xl md:text-4xl text-on-surface">{{ $totalBookings ?? 0 }}+</h3>
+                        <p class="font-inter text-[13px] text-on-surface-variant mt-1.5 font-medium">Perjalanan Sukses</p>
+                    </div>
+                    
+                    <div class="col-span-2 bg-primary p-6 md:p-8 rounded-2xl premium-shadow text-center flex flex-col justify-center text-white relative overflow-hidden transition-transform hover:-translate-y-1 duration-300">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mt-10 -mr-10"></div>
+                        <div class="absolute bottom-0 left-0 w-24 h-24 bg-black/10 rounded-full blur-xl -mb-10 -ml-10"></div>
+                        
+                        <div class="relative z-10">
+                            <div class="w-14 h-14 mx-auto bg-white/20 rounded-full flex items-center justify-center mb-3 backdrop-blur-sm border border-white/30">
+                                <span class="material-symbols-outlined text-[28px]">groups</span>
+                            </div>
+                            <h3 class="font-montserrat font-bold text-3xl md:text-4xl">{{ $totalCustomers ?? 0 }}+</h3>
+                            <p class="font-inter text-[14px] text-white/90 mt-1.5 font-medium">Pelanggan Telah Mempercayai Kami</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
     <div x-data="{ 
         showDetail: false, revName: '', revDate: '', revVehicle: '', 
         revVRating: 5, revCRating: 5, revComment: '', revAvatar: '' 
     }">
 
-        <section class="py-12 bg-surface overflow-hidden border-t border-outline-variant/20 relative">
+        <section class="py-12 bg-surface overflow-hidden relative">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
                 <h2 class="font-montserrat text-[24px] font-bold text-on-surface">Apa Kata Mereka?</h2>
                 <p class="font-inter text-[14px] text-on-surface-variant">Pengalaman nyata dari pelanggan setia KlikRental.</p>
@@ -222,7 +309,6 @@
                                 
                                 <div class="flex justify-between items-start mb-3">
                                     <div class="flex items-center gap-3">
-                                        <!-- LOGIKA TAMPIL FOTO PROFIL -->
                                         @if($userAvatar)
                                             <img src="{{ filter_var($userAvatar, FILTER_VALIDATE_URL) ? $userAvatar : Storage::url($userAvatar) }}" alt="{{ $rev->user->name ?? 'User' }}" class="w-10 h-10 rounded-full object-cover shrink-0 border border-outline-variant/30 shadow-sm">
                                         @else
@@ -260,7 +346,6 @@
             </div>
         </section>
 
-        <!-- MODAL DETAIL ULASAN -->
         <div x-show="showDetail" 
              class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6" style="display: none;">
             
@@ -284,7 +369,6 @@
 
                 <div class="p-6 space-y-5">
                     <div class="flex items-center gap-4 border-b border-outline-variant/20 pb-4">
-                        <!-- LOGIKA TAMPIL FOTO PROFIL DI MODAL (ALPINE JS) -->
                         <template x-if="revAvatar">
                             <img :src="revAvatar" alt="Avatar" class="w-12 h-12 rounded-full object-cover shrink-0 border border-outline-variant/30 shadow-sm">
                         </template>
