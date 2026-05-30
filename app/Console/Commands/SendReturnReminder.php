@@ -49,10 +49,10 @@ class SendReturnReminder extends Command
 
     private function sendWebhookToN8n($booking)
     {
-        $webhookUrl = env('N8N_WEBHOOK_REMINDER_URL');
+        $webhookUrl = env('N8N_WEBHOOK_URL');
 
         if (!$webhookUrl) {
-            Log::warning('N8N_WEBHOOK_REMINDER_URL belum diset di .env');
+            Log::warning('N8N_WEBHOOK_URL belum diset di .env');
             return;
         }
 
