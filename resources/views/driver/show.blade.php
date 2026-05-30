@@ -77,9 +77,10 @@
                     </div>
 
                     @if(isset($driver->reviews) && $driver->reviews->count() > 0)
-                        <div class="space-y-6">
+                        <div class="space-y-6" id="reviews-container">
                             @foreach($driver->reviews as $review)
-                            <div class="border-b border-outline-variant/10 pb-5 last:border-0 last:pb-0">
+                            <!-- Tambahkan class 'hidden extra-review' jika iterasi lebih dari 3 -->
+                            <div class="review-item border-b border-outline-variant/10 pb-5 last:border-0 last:pb-0 {{ $loop->iteration > 3 ? 'hidden extra-review' : '' }}">
                                 <div class="flex justify-between items-start mb-2.5">
                                     <div class="flex items-center gap-3">
                                         <!-- Avatar Inisial Nama -->
@@ -107,6 +108,17 @@
                             </div>
                             @endforeach
                         </div>
+
+                        <!-- Tombol Tampilkan Semua -->
+                        @if($driver->reviews->count() > 3)
+                            <div class="mt-6 text-center border-t border-outline-variant/10 pt-4">
+                                <button id="toggle-reviews-btn" onclick="toggleReviews()" class="inline-flex items-center gap-1 px-4 py-2 bg-surface-container rounded-full text-primary font-montserrat font-semibold text-sm hover:bg-primary/10 transition-colors duration-200">
+                                    <span id="toggle-text">Lihat Semua Ulasan ({{ $driver->reviews->count() }})</span>
+                                    <span id="toggle-icon" class="material-symbols-outlined text-[18px]">expand_more</span>
+                                </button>
+                            </div>
+                        @endif
+
                     @else
                         <!-- State Kosong Jika Belum Ada Review -->
                         <div class="text-center py-10">
@@ -122,4 +134,41 @@
             </div>
         </div>
     </div>
+
+    <!-- Script untuk Toggle Ulasan -->
+    <script>
+        function toggleReviews() {
+            const extraReviews = document.querySelectorAll('.extra-review');
+            const btnText = document.getElementById('toggle-text');
+            const btnIcon = document.getElementById('toggle-icon');
+            
+            // Cek status saat ini dari elemen pertama yang disembunyikan
+            if (extraReviews.length > 0) {
+                const isHidden = extraReviews[0].classList.contains('hidden');
+
+                extraReviews.forEach(el => {
+                    if (isHidden) {
+                        el.classList.remove('hidden');
+                        // Animasi sederhana
+                        el.style.opacity = 0;
+                        setTimeout(() => {
+                            el.style.transition = 'opacity 0.3s ease';
+                            el.style.opacity = 1;
+                        }, 10);
+                    } else {
+                        el.classList.add('hidden');
+                    }
+                });
+
+                // Update text dan icon
+                if (isHidden) {
+                    btnText.innerText = 'Sembunyikan Ulasan';
+                    btnIcon.innerText = 'expand_less';
+                } else {
+                    btnText.innerText = 'Lihat Semua Ulasan ({{ $driver->reviews->count() ?? 0 }})';
+                    btnIcon.innerText = 'expand_more';
+                }
+            }
+        }
+    </script>
 </x-app-layout>

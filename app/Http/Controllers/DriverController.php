@@ -17,7 +17,6 @@ class DriverController extends Controller
         return view('driver.index', compact('drivers'));
     }
 
-    // TAMBAHKAN FUNGSI INI
     public function show($id)
     {
         // Ambil data driver beserta hitungan order, rata-rata rating, dan list ulasan
