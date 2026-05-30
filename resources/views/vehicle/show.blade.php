@@ -52,17 +52,19 @@
                     </div>
 
                     @if(isset($vehicle->reviews) && $vehicle->reviews->count() > 0)
-                        <div class="space-y-6">
+                        <div class="space-y-6" id="reviews-container">
                             @foreach($vehicle->reviews()->latest()->get() as $review)
-                            <div class="border-b border-outline-variant/10 pb-5 last:border-0 last:pb-0">
+                            <div class="review-item border-b border-outline-variant/10 pb-5 last:border-0 last:pb-0 {{ $loop->iteration > 3 ? 'hidden extra-review' : '' }}">
                                 <div class="flex justify-between items-start mb-2.5">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-[14px] uppercase shrink-0">
-                                            {{ substr($review->user->name ?? 'A', 0, 1) }}
+                                        <div class="w-10 h-10 rounded-full shrink-0 overflow-hidden border border-outline-variant/30 bg-surface-container">
+                                            <img src="{{ $review->user?->display_picture ?? 'https://ui-avatars.com/api/?name='.urlencode($review->user?->name ?? 'Anonim').'&background=random' }}"
+                                                alt="{{ $review->user?->name ?? 'Anonim' }}"
+                                                class="w-full h-full object-cover">
                                         </div>
                                         <div>
-                                            <p class="font-semibold text-[14px] text-on-surface font-montserrat">{{ $review->user->name ?? 'Anonim' }}</p>
-                                            <p class="text-[11px] text-on-surface-variant font-inter">{{ $review->created_at->diffForHumans() }}</p>
+                                            <p class="font-semibold text-[14px] text-on-surface font-montserrat">{{ $review->user?->name ?? 'Anonim' }}</p>
+                                            <p class="text-[11px] text-on-surface-variant font-inter">{{ $review->created_at?->diffForHumans() }}</p>
                                         </div>
                                     </div>
                                     <div class="flex text-[#B87503] gap-0.5">
@@ -72,13 +74,23 @@
                                     </div>
                                 </div>
                                 @if($review->comment)
-                                    <p class="text-[13px] text-on-surface-variant/90 leading-relaxed font-inter italic ml-13 border-l-2 border-primary/20 pl-3">
+                                    <p class="text-[13px] text-on-surface-variant/90 leading-relaxed font-inter italic ml-13 border-l-2 border-primary/20 pl-3 mt-2">
                                         "{{ $review->comment }}"
                                     </p>
                                 @endif
                             </div>
                             @endforeach
                         </div>
+
+                        @if($vehicle->reviews->count() > 3)
+                        <div class="mt-6 text-center border-t border-outline-variant/10 pt-4">
+                            <button id="toggle-reviews-btn" onclick="toggleReviews()" class="inline-flex items-center gap-1 px-4 py-2 bg-surface-container rounded-full text-primary font-montserrat font-semibold text-sm hover:bg-primary/10 transition-colors duration-200">
+                                <span id="toggle-text">Lihat Semua Ulasan ({{ $vehicle->reviews->count() }})</span>
+                                <span id="toggle-icon" class="material-symbols-outlined text-[18px]">expand_more</span>
+                            </button>
+                        </div>
+                        @endif
+
                     @else
                         <div class="text-center py-8">
                             <div class="w-16 h-16 bg-surface-container rounded-full flex items-center justify-center mx-auto mb-3 text-on-surface-variant/50">
@@ -168,4 +180,40 @@
             </div>
         </div>
     </div>
+
+    <script>
+        function toggleReviews() {
+            const extraReviews = document.querySelectorAll('.extra-review');
+            const btnText = document.getElementById('toggle-text');
+            const btnIcon = document.getElementById('toggle-icon');
+
+            // Cek status saat ini dari elemen pertama yang disembunyikan
+            if (extraReviews.length > 0) {
+                const isHidden = extraReviews[0].classList.contains('hidden');
+
+                extraReviews.forEach(el => {
+                    if (isHidden) {
+                        el.classList.remove('hidden');
+                        // Animasi sederhana
+                        el.style.opacity = 0;
+                        setTimeout(() => {
+                            el.style.transition = 'opacity 0.3s ease';
+                            el.style.opacity = 1;
+                        }, 10);
+                    } else {
+                        el.classList.add('hidden');
+                    }
+                });
+
+                // Update text dan icon
+                if (isHidden) {
+                    btnText.innerText = 'Sembunyikan Ulasan';
+                    btnIcon.innerText = 'expand_less';
+                } else {
+                    btnText.innerText = 'Lihat Semua Ulasan ({{ $vehicle->reviews->count() ?? 0 }})';
+                    btnIcon.innerText = 'expand_more';
+                }
+            }
+        }
+    </script>
 </x-app-layout>
