@@ -16,10 +16,29 @@ class VehicleForm
         return $schema
             ->components([
                 TextInput::make('name')
+                    ->label('Nama Kendaraan')
                     ->required()
                     ->maxLength(255),
+
+                // TAMBAHAN: Input Plat Nomor dengan Auto-Generate Plat Semarang (H)
+                TextInput::make('license_plate')
+                    ->label('Plat Nomor (Nomor Polisi)')
+                    ->required()
+                    ->maxLength(15)
+                    ->placeholder('Contoh: H 1234 ABG')
+                    // Logic Auto-Generate khusus sewaktu input data mobil baru
+                    ->default(function () {
+                        $angkaRandom = rand(1000, 9999); // Angka 4 digit acak
+                        $panjangHuruf = rand(2, 3); // Panjang suffix huruf (2 atau 3 karakter)
+                        $hurufRandom = '';
+                        for ($i = 0; $i < $panjangHuruf; $i++) {
+                            $hurufRandom .= chr(rand(65, 90)); // Mengambil karakter huruf kapital A-Z secara acak
+                        }
+                        return "H {$angkaRandom} {$hurufRandom}";
+                    })
+                    // Memastikan data yang disimpan ke DB otomatis dikonversi ke huruf kapital
+                    ->dehydrateStateUsing(fn ($state) => strtoupper($state)),
                 
-                // Tambahan Select untuk Class Mobil
                 Select::make('class')
                     ->options([
                         'Standard' => 'Standard',
@@ -29,7 +48,6 @@ class VehicleForm
                     ->default('Standard')
                     ->required(),
 
-                // TextInput diubah menjadi Select sesuai enum database
                 Select::make('type')
                     ->options([
                         'SUV' => 'SUV',
@@ -66,7 +84,7 @@ class VehicleForm
                 TextInput::make('price_per_day')
                     ->required()
                     ->numeric()
-                    ->prefix('Rp'), // Tambahan biar cantik ada tulisan Rp nya
+                    ->prefix('Rp'),
                     
                 Select::make('status')
                     ->options([

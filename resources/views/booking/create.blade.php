@@ -1,5 +1,4 @@
 <x-app-layout>
-    <!-- CSS Flatpickr & Modal Scrollbar -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/airbnb.css">
     <style>
@@ -30,6 +29,7 @@
         /* Custom Scrollbar Modal */
         .custom-scrollbar::-webkit-scrollbar {
             width: 6px;
+            height: 6px;
         }
 
         .custom-scrollbar::-webkit-scrollbar-track {
@@ -100,18 +100,17 @@
         }
     </style>
 
-    <!-- State Alpine.js untuk Modal dan Value Supir & Nomor WA -->
     <div x-data="{ 
             showDriverModal: false, 
             driverId: '', 
             driverName: 'Tanpa Supir (Lepas Kunci)', 
             driverPrice: '+ Rp 0/hari',
             showPhoneModal: {{ $errors->has('phone_number') ? 'true' : 'false' }},
-            userPhone: '{{ old('phone_number', auth()->user()->phone_number) }}'
+            userPhone: '{{ old('phone_number', auth()->user()->phone_number) }}',
+            promoCode: ''
          }"
         class="max-w-5xl mx-auto px-4 py-10">
 
-        <!-- Header -->
         <div class="mb-8 border-b border-outline-variant/30 pb-6">
             <h1 class="font-montserrat text-3xl font-bold text-on-surface">Form Penyewaan Mobil</h1>
             <p class="font-inter text-on-surface-variant mt-2 text-lg">
@@ -126,16 +125,13 @@
             <input type="hidden" name="vehicle_id" value="{{ $vehicle->id }}">
             <input type="hidden" name="phone_number" x-model="userPhone">
 
-            <!-- Kolom Kiri: Input Data -->
             <div class="lg:col-span-2 bg-surface border border-outline-variant/60 rounded-2xl p-5 md:p-6 premium-shadow space-y-6">
 
-                <!-- Tgl Ambil & Kembali -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="font-inter font-semibold text-[13px] text-on-surface-variant mb-1.5 block">Tgl & Jam Ambil</label>
                         <div class="relative">
                             <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-primary text-[20px] z-10">calendar_today</span>
-                            <!-- EDIT: bg-white dihapus, diganti bg-surface-container-lowest -->
                             <input type="text" name="start_date" id="start_date" required placeholder="YYYY-MM-DD HH:MM" data-min-date="{{ date('Y-m-d H:i') }}"
                                 class="datetime-picker w-full bg-surface-container-lowest border border-outline-variant/50 rounded-xl py-2.5 pl-10 pr-4 text-[14px] text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all cursor-pointer">
                         </div>
@@ -144,14 +140,12 @@
                         <label class="font-inter font-semibold text-[13px] text-on-surface-variant mb-1.5 block">Tgl & Jam Kembali</label>
                         <div class="relative">
                             <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-primary text-[20px] z-10">event_busy</span>
-                            <!-- EDIT: bg-white dihapus, diganti bg-surface-container-lowest -->
                             <input type="text" name="end_date" id="end_date" required placeholder="YYYY-MM-DD HH:MM" data-min-date="{{ date('Y-m-d H:i') }}"
                                 class="datetime-picker w-full bg-surface-container-lowest border border-outline-variant/50 rounded-xl py-2.5 pl-10 pr-4 text-[14px] text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all cursor-pointer">
                         </div>
                     </div>
                 </div>
 
-                <!-- Zona Jemput & Kembali -->
                 @php $selectClass = "w-full bg-surface-container-lowest border border-outline-variant/50 rounded-xl py-2.5 pl-10 pr-10 text-[14px] text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none appearance-none cursor-pointer bg-none transition-all"; @endphp
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
@@ -178,7 +172,6 @@
                     </div>
                 </div>
 
-                <!-- OPSI SUPIR -->
                 <div>
                     <label class="font-inter font-semibold text-[13px] text-on-surface-variant mb-1.5 block">Opsi Supir</label>
                     <input type="hidden" name="driver_id" id="driver_input" x-model="driverId">
@@ -196,19 +189,44 @@
                     </button>
                 </div>
 
-                <!-- Kode Promo -->
                 <div>
-                    <label class="font-inter font-semibold text-[13px] text-on-surface-variant mb-1.5 block">Kode Promo</label>
-                    <div class="relative">
-                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-primary text-[20px]">local_offer</span>
-                        <input type="text" name="promo_code" id="promo_code" placeholder="Masukkan kode promo jika ada..."
-                            class="w-full bg-surface-container-lowest border border-outline-variant/50 rounded-xl py-2.5 pl-10 pr-4 text-[14px] text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all">
+                    <label class="font-inter font-semibold text-[13px] text-on-surface-variant mb-1.5 flex items-center gap-1">
+                        Kode Promo <span class="bg-primary/10 text-primary text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider">Opsional</span>
+                    </label>
+                    
+                    <div class="flex gap-2">
+                        <div class="relative flex-grow">
+                            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-primary text-[20px]">local_offer</span>
+                            <input type="text" name="promo_code" id="promo_code" x-model="promoCode" placeholder="Punya kode? Ketik di sini..."
+                                class="w-full uppercase bg-surface-container-lowest border border-outline-variant/50 rounded-xl py-2.5 pl-10 pr-4 text-[14px] font-bold text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all">
+                        </div>
+                        <button type="button" @click="window.triggerCalc()" class="px-4 py-2.5 bg-surface-container border border-outline-variant/50 hover:bg-primary hover:text-white hover:border-primary text-on-surface-variant font-inter font-bold text-[13px] rounded-xl transition-all shadow-sm">
+                            Terapkan
+                        </button>
                     </div>
+
+                    @if(isset($activePromos) && $activePromos->count() > 0)
+                    <div class="mt-3 flex gap-3 overflow-x-auto custom-scrollbar pb-2">
+                        @foreach($activePromos as $promo)
+                        <button type="button" @click="promoCode = '{{ $promo->code }}'; window.triggerCalc();" class="shrink-0 w-[200px] bg-surface border border-outline-variant/40 rounded-xl p-3 text-left hover:border-primary hover:bg-primary/5 transition-all group relative overflow-hidden">
+                            <div class="absolute -right-2 -bottom-2 opacity-5 group-hover:opacity-10 group-hover:scale-110 transition-all duration-300">
+                                <span class="material-symbols-outlined text-[50px] text-primary">sell</span>
+                            </div>
+                            <div class="flex justify-between items-start mb-1 relative z-10">
+                                <span class="font-montserrat font-bold text-[14px] text-primary">{{ $promo->code }}</span>
+                                <span class="bg-primary/10 text-primary text-[10px] font-bold px-1.5 py-0.5 rounded">
+                                    -{{ $promo->discount_percentage }}%
+                                </span>
+                            </div>
+                            <p class="font-inter text-[11px] text-on-surface-variant relative z-10">Maks. Rp {{ number_format($promo->max_discount, 0, ',', '.') }}</p>
+                        </button>
+                        @endforeach
+                    </div>
+                    @endif
                 </div>
+
             </div>
 
-            <!-- Kolom Kanan: Rincian Tagihan -->
-            <!-- EDIT: glass-panel dihapus, diganti bg-surface/80 backdrop-blur-xl agar mengikuti Dark Mode variables -->
             <div class="bg-surface/80 backdrop-blur-xl p-5 md:p-6 rounded-2xl border border-outline-variant/30 h-max sticky top-24 premium-shadow">
                 <h3 class="font-montserrat font-bold text-[16px] text-on-surface mb-4 pb-2 border-b border-outline-variant/30 flex items-center gap-2">
                     <span class="material-symbols-outlined text-primary text-[20px]">receipt_long</span> Rincian Tagihan
@@ -232,20 +250,17 @@
                         <strong id="detail-dropoff" class="text-on-surface font-semibold text-[14px]">Rp 0</strong>
                     </div>
 
-                    <!-- Promo -->
                     <div id="promo-row" class="hidden justify-between items-center text-forest-green pt-2.5 border-t border-dashed border-outline-variant/60">
                         <strong id="detail-promo-label" class="font-semibold text-[13px]">Diskon Promo:</strong>
                         <strong id="detail-promo-discount" class="font-bold text-[14px]">- Rp 0</strong>
                     </div>
                     <p id="live-promo-msg" class="text-[12px] font-medium transition-all duration-300 empty:hidden"></p>
 
-                    <!-- PAJAK -->
                     <div class="flex justify-between items-center text-on-surface-variant pt-2">
                         <span class="text-[13px]">Pajak (PPN 11%):</span>
                         <strong id="detail-tax" class="font-semibold text-[14px]">Rp 0</strong>
                     </div>
 
-                    <!-- Total Akhir -->
                     <div class="flex justify-between items-center pt-4 border-t border-outline-variant/40 gap-2 min-w-0 w-full">
                         <h2 class="font-montserrat font-bold text-[14px] text-on-surface whitespace-nowrap">Total Pembayaran:</h2>
                         <div class="overflow-hidden text-right flex-grow min-w-0">
@@ -254,7 +269,6 @@
                     </div>
                 </div>
                 
-                <!-- EDIT: bg-error di-adjust agar enak dipandang saat Dark Mode -->
                 <div class="mt-4 flex items-start gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/30">
                     <span class="material-symbols-outlined text-[16px] text-red-600 mt-0.5">warning</span>
                     <p class="font-inter text-[11px] text-on-surface-variant leading-relaxed">
@@ -268,9 +282,6 @@
             </div>
         </form>
 
-        <!-- ============================================== -->
-        <!-- MODAL POPUP CENTER DRIVER SELECTION            -->
-        <!-- ============================================== -->
         <div x-show="showDriverModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6" style="display: none;">
             <div x-show="showDriverModal" x-transition.opacity class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="showDriverModal = false"></div>
 
@@ -293,11 +304,9 @@
                     </button>
                 </div>
 
-                <!-- Grid Card Supir -->
                 <div class="p-5 overflow-y-auto custom-scrollbar">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-                        <!-- Card: Lepas Kunci -->
                         <div @click="driverId = ''; driverName = 'Tanpa Supir (Lepas Kunci)'; driverPrice = '+ Rp 0/hari'; showDriverModal = false; window.triggerCalc();"
                             class="cursor-pointer bg-surface border-2 rounded-xl p-4 transition-all duration-300 hover:border-primary hover:bg-primary/5 flex items-center gap-4"
                             :class="driverId === '' ? 'border-primary bg-primary/5' : 'border-outline-variant/40'">
@@ -313,7 +322,6 @@
                             </div>
                         </div>
 
-                        <!-- Card: Looping Data Supir -->
                         @foreach($drivers as $driver)
                         <div @click="driverId = '{{ $driver->id }}'; driverName = '{{ $driver->name }}'; driverPrice = '+ Rp {{ number_format($driver->daily_rate, 0, ',', '.') }}/hari'; showDriverModal = false; window.triggerCalc();"
                             class="cursor-pointer bg-surface border-2 rounded-xl p-4 transition-all duration-300 hover:border-primary hover:bg-primary/5 flex items-center gap-4"
@@ -354,9 +362,6 @@
                 </div>
             </div>
         </div>
-        <!-- ============================================== -->
-
-        <!-- PERUBAHAN: MODAL POPUP JIKA NOMOR WHATSAPP KOSONG -->
         <div x-show="showPhoneModal" class="fixed inset-0 z-[105] flex items-center justify-center p-4 sm:p-6" style="display: none;">
             <div x-show="showPhoneModal" x-transition.opacity class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
 
@@ -403,7 +408,6 @@
 
                 <div class="p-5 border-t border-outline-variant/30 bg-surface-container/30 flex justify-end gap-3">
                     <button type="button" @click="showPhoneModal = false" class="px-4 py-2 text-[13px] font-bold font-inter text-on-surface-variant hover:bg-surface-container border border-transparent hover:border-outline-variant/30 rounded-xl transition-all">Batal</button>
-                    <!-- Tombol ini memicu submit form utama setelah mengisi data -->
                     <button type="button" @click="if(userPhone && userPhone.trim() !== '') { showPhoneModal = false; $nextTick(() => document.getElementById('bookingForm').submit()); }" 
                         class="px-5 py-2 text-[13px] font-bold font-inter text-white bg-primary rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center gap-1">
                         Simpan & Lanjut <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
@@ -411,14 +415,10 @@
                 </div>
             </div>
         </div>
-        <!-- ============================================== -->
+        </div>
 
-    </div>
-
-    <!-- JS Flatpickr -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
-    <!-- SCRIPT AJAX UNTUK LIVE CALCULATION -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
 
@@ -431,7 +431,7 @@
                 dateFormat: "Y-m-d H:i",
                 time_24hr: true,
                 minDate: "today",
-                disable: disabledDates, // Blokir kalender sesuai jadwal booking
+                disable: disabledDates,
                 onOpen: function(selectedDates, dateStr, instance) {
                     let backdrop = document.getElementById('flatpickr-backdrop');
                     if (!backdrop) {
@@ -485,7 +485,7 @@
 
             // Deklarasi Variabel DOM
             const form = document.getElementById('bookingForm');
-            const inputs = form.querySelectorAll('input:not(#driver_input):not([name="phone_number"]), select');
+            const inputs = form.querySelectorAll('input:not(#driver_input):not([name="phone_number"]):not(#promo_code), select');
             const btnSubmit = document.getElementById('btn-submit');
 
             const elDuration = document.getElementById('detail-duration');
@@ -551,7 +551,6 @@
                             if (document.getElementById('promo_code').value.trim() !== '') {
                                 elPromoMsg.innerText = data.promo_message;
                                 if (data.promo_valid) {
-                                    // Gunakan class bawaan Tailwind untuk text color agar kompatibel dark mode
                                     elPromoMsg.className = "text-[12px] font-medium transition-all duration-300 text-green-600 dark:text-green-500 mt-2";
                                     promoRow.style.display = 'flex';
                                     elPromoLabel.innerText = `Diskon Promo (${data.promo_percentage}%):`;
@@ -586,6 +585,16 @@
             inputs.forEach(input => {
                 input.addEventListener('change', calculatePrice);
                 input.addEventListener('keyup', calculatePrice);
+            });
+            
+            // Hapus event listener keyup untuk input promo agar tidak ngirim AJAX bertubi-tubi pas lagi ngetik
+            const promoInput = document.getElementById('promo_code');
+            promoInput.addEventListener('keypress', function(e) {
+                // Kalkulasi saat tombol Enter ditekan pada kolom promo
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    calculatePrice();
+                }
             });
         });
     </script>

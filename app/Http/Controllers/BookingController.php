@@ -45,7 +45,10 @@ class BookingController extends Controller
                 ];
             });
 
-        return view('booking.create', compact('vehicle', 'zones', 'drivers', 'bookedRanges'));
+        // 4. (BARU) Ambil Daftar Promo yang masih berlaku hari ini untuk Kupon UI
+        $activePromos = Promo::where('valid_until', '>=', now())->get();
+
+        return view('booking.create', compact('vehicle', 'zones', 'drivers', 'bookedRanges', 'activePromos'));
     }
 
     public function store(Request $request)
@@ -231,9 +234,9 @@ class BookingController extends Controller
                     $discount = ($promoPercentage / 100) * $subtotal;
                     $promoDiscount = $discount > $promo->max_discount ? $promo->max_discount : $discount;
 
-                    $promoMessage = "Promo diterapkan.";
+                    $promoMessage = "";
                 } else {
-                    $promoMessage = 'Kode promo tidak valid.';
+                    $promoMessage = 'Kode promo tidak valid atau sudah kadaluarsa.';
                 }
             }
 
@@ -283,7 +286,6 @@ class BookingController extends Controller
                 'customer_details' => [
                     'first_name' => $booking->user->name,
                     'email' => $booking->user->email,
-                    // PERUBAHAN: Gunakan phone number yang sekarang ditarik otomatis dari tabel user
                     'phone' => $booking->user->phone_number ?? '081234567890', 
                 ],
                 'item_details' => [

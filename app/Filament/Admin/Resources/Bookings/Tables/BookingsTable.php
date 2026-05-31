@@ -2,10 +2,9 @@
 
 namespace App\Filament\Admin\Resources\Bookings\Tables;
 
-// PERHATIKAN: Namespace sudah dikembalikan sesuai kode aslimu
-use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\BulkActionGroup;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\SelectColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -26,21 +25,29 @@ class BookingsTable
                     ->weight('bold')
                     ->description(fn ($record): string => $record->user->name ?? 'Unknown'),
 
-                // 2. GABUNGAN KENDARAAN & TOTAL HARGA
+                // 2. GABUNGAN KENDARAAN, PLAT NOMOR & TOTAL HARGA (Diperbarui)
                 TextColumn::make('vehicle.name')
                     ->label('Kendaraan & Total')
-                    ->searchable()
+                    ->searchable(query: function ($query, string $search) {
+                        // Admin bisa cari data sewa berdasarkan nama mobil atau plat nomornya langsung
+                        $query->whereHas('vehicle', function ($q) use ($search) {
+                            $q->where('name', 'like', "%{$search}%")
+                              ->orWhere('license_plate', 'like', "%{$search}%");
+                        });
+                    })
                     ->sortable()
-                    ->description(fn ($record): string => 'Rp ' . number_format($record->total_price, 0, ',', '.')),
+                    ->weight('bold')
+                    // Memunculkan Plat Nomor dan Total Harga di deskripsi kolom kendaraan
+                    ->description(fn ($record): string => ($record->vehicle->license_plate ? "[ {$record->vehicle->license_plate} ] • " : '') . 'Rp ' . number_format($record->total_price, 0, ',', '.')),
 
-                // 3. JADWAL SEWA (Tanggal Ambil di atas, Tanggal Kembali di bawah)
+                // 3. JADWAL SEWA
                 TextColumn::make('start_date')
                     ->label('Jadwal Sewa')
                     ->dateTime('d M Y, H:i')
                     ->sortable()
                     ->description(fn ($record): string => 's/d ' . Carbon::parse($record->end_date)->format('d M Y, H:i')),
 
-                // 4. STATUS (Bisa di-klik dan diubah langsung tanpa masuk ke Edit)
+                // 4. STATUS
                 SelectColumn::make('status')
                     ->label('Status')
                     ->options([
@@ -55,7 +62,6 @@ class BookingsTable
                     ->sortable(),
             ])
             ->filters([
-                // Filter Status agar shortcut dari Dashboard bisa berjalan
                 SelectFilter::make('status')
                     ->options([
                         'pending' => 'Pending',
@@ -66,12 +72,10 @@ class BookingsTable
                         'cancelled' => 'Cancelled',
                     ]),
             ])
-            // PERHATIKAN: Menggunakan recordActions sesuai kode aslimu
-            ->recordActions([
+            ->actions([
                 EditAction::make()->iconButton(),
             ])
-            // PERHATIKAN: Menggunakan toolbarActions sesuai kode aslimu
-            ->toolbarActions([
+            ->bulkActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
