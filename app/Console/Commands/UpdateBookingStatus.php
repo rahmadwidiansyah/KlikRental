@@ -16,29 +16,35 @@ class UpdateBookingStatus extends Command
     public function handle()
     {
         $now = Carbon::now();
+        $batasWaktuToleransi = $now->copy()->subMinutes(30);
+
+        // [LOG SPY]: Cek parameter overtime
+        Log::info("[CRON UPDATE-STATUS] Cek Overtime. Waktu sekarang: {$now->toDateTimeString()}. Cari end_date <= {$batasWaktuToleransi->toDateTimeString()}");
 
         // HANYA FOKUS KE DETEKSI TELAT (IN_USE -> LATE)
         $lateBookings = Booking::with(['user', 'vehicle', 'driver'])
                ->where('status', 'in_use')
-               ->where('end_date', '<=', $now->copy()->subMinutes(30))
+               ->where('end_date', '<=', $batasWaktuToleransi)
                ->get();
+
+        Log::info("[CRON UPDATE-STATUS] Ditemukan " . $lateBookings->count() . " booking yang OVERTIME.");
 
         if ($lateBookings->isNotEmpty()) {
             foreach ($lateBookings as $booking) {
-                // Update status booking ke late
                 $booking->status = 'late';
                 $booking->save();
 
-                // Tembak webhook n8n
                 $this->sendLateWebhookToN8n($booking, $now);
                 
                 $this->info('🚨 OVERTIME: Status LATE & Webhook terkirim untuk ' . $booking->booking_code);
+                Log::info("[CRON UPDATE-STATUS] Berhasil update & kirim Webhook OVERTIME untuk: {$booking->booking_code}");
             }
         }
     }
 
     private function sendLateWebhookToN8n($booking, $now)
     {
+        // (Isi function ini tetap sama persis)
         $webhookUrl = env('N8N_WEBHOOK_URL');
         $adminPhone = env('ADMIN_PHONE', '081234567890');
 
