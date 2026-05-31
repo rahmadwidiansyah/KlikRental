@@ -7,7 +7,7 @@ use App\Models\Booking;
 use Midtrans\Config;
 use Midtrans\Notification;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Http; // <-- WAJIB TAMBAH INI
+use Illuminate\Support\Facades\Http;
 
 class MidtransController extends Controller
 {
@@ -88,20 +88,21 @@ class MidtransController extends Controller
             'event'          => 'booking_paid',
             'booking_code'   => $booking->booking_code,
             
-            // 1. Data Customer (pastikan field no hp di tabel users benar)
+            // 1. Data Customer 
             'customer_name'  => $booking->user->name ?? 'Customer',
             'customer_phone' => $booking->user->phone_number ?? $booking->user->phone ?? '', 
             
             // 2. Data Admin
             'admin_phone'    => $adminPhone,
             
-            // 3. Data Driver (Bisa Null kalau pelanggan pilih lepas kunci)
+            // 3. Data Driver 
             'has_driver'     => $booking->driver_id ? true : false,
             'driver_name'    => $booking->driver->name ?? null,
             'driver_phone'   => $booking->driver->phone_number ?? null,
             
             // 4. Detail Sewa
             'vehicle_name'   => $booking->vehicle->name ?? 'Kendaraan',
+            'license_plate'  => $booking->vehicle->license_plate ?? 'Belum Diatur', // <-- TAMBAHAN: Data Plat Nomor
             'start_date'     => $booking->start_date,
             'end_date'       => $booking->end_date,
             'pickup_zone'    => $booking->pickupZone->zone_name ?? '-',

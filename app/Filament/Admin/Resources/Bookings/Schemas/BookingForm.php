@@ -6,6 +6,7 @@ use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Select;
 use Filament\Schemas\Schema;
+use App\Models\Vehicle;
 
 class BookingForm
 {
@@ -17,7 +18,6 @@ class BookingForm
                     ->required()
                     ->readOnly(),
 
-                // Diubah pakai Select & relationship biar nampil Nama, bukan ID
                 Select::make('user_id')
                     ->label('Pelanggan')
                     ->relationship('user', 'name')
@@ -25,9 +25,16 @@ class BookingForm
                     ->preload()
                     ->required(),
 
+                // PERBAIKAN: Menampilkan Nama Mobil + Plat Nomor di pilihan dropdown
                 Select::make('vehicle_id')
                     ->label('Kendaraan')
-                    ->relationship('vehicle', 'name')
+                    ->options(function () {
+                        return Vehicle::all()->pluck('name', 'id')->map(function ($name, $id) {
+                            $vehicle = Vehicle::find($id);
+                            $plat = $vehicle->license_plate ? " [{$vehicle->license_plate}]" : '';
+                            return "{$name}{$plat}";
+                        });
+                    })
                     ->searchable()
                     ->preload()
                     ->required(),

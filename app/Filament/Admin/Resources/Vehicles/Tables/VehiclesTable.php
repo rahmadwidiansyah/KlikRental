@@ -22,22 +22,27 @@ class VehiclesTable
                     ->label('Foto')
                     ->circular(),
 
-                // 2. NAMA KENDARAAN + SPESIFIKASI (Digabung agar ringkas)
+                // 2. NAMA KENDARAAN + SPESIFIKASI + PLAT NOMOR (Disatukan agar compact)
                 TextColumn::make('name')
                     ->label('Kendaraan & Spesifikasi')
-                    ->searchable()
+                    ->searchable(query: function ($query, string $search) {
+                        // Fitur searching cerdas: tabel bisa dicari berdasarkan Nama atau Plat Nomor sekaligus
+                        $query->where('name', 'like', "%{$search}%")
+                              ->orWhere('license_plate', 'like', "%{$search}%");
+                    })
                     ->sortable()
                     ->weight('bold')
-                    ->description(fn ($record): string => "{$record->transmission} • {$record->fuel_type} • {$record->seats} Kursi • {$record->luggage_capacity} Koper"),
+                    // Plat nomor ditampilkan di deskripsi terbawah dengan style tebal pembeda
+                    ->description(fn ($record): string => "{$record->transmission} • {$record->fuel_type} • {$record->seats} Kursi • {$record->luggage_capacity} Koper" . ($record->license_plate ? " \n [ {$record->license_plate} ]" : '')),
 
                 // 3. KELAS + TIPE
                 TextColumn::make('class')
                     ->label('Kelas & Tipe')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'VIP' => 'warning',      // Kuning/Emas untuk VIP
-                        'Premium' => 'info',     // Biru untuk Premium
-                        'Standard' => 'success', // Hijau untuk Standard
+                        'VIP' => 'warning',
+                        'Premium' => 'info',
+                        'Standard' => 'success',
                         default => 'gray',
                     })
                     ->searchable()
@@ -50,7 +55,7 @@ class VehiclesTable
                     ->money('IDR', locale: 'id') 
                     ->sortable(),
 
-                // 5. STATUS EDITABLE (Bisa langsung diubah tanpa masuk menu edit)
+                // 5. STATUS EDITABLE
                 SelectColumn::make('status')
                     ->label('Status')
                     ->options([
@@ -61,7 +66,6 @@ class VehiclesTable
                     ->selectablePlaceholder(false)
                     ->sortable(),
 
-                // WAKTU (Disembunyikan by default)
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -73,7 +77,6 @@ class VehiclesTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                // Filter cepat untuk Status Kendaraan
                 SelectFilter::make('status')
                     ->label('Filter Status')
                     ->options([
@@ -82,7 +85,6 @@ class VehiclesTable
                         'maintenance' => 'Perawatan',
                     ]),
                     
-                // Filter cepat untuk Kelas Kendaraan
                 SelectFilter::make('class')
                     ->label('Filter Kelas')
                     ->options([
@@ -92,7 +94,6 @@ class VehiclesTable
                     ]),
             ])
             ->recordActions([
-                // Ikon edit diperkecil biar tabel makin lega
                 EditAction::make()->iconButton(),
             ])
             ->toolbarActions([

@@ -69,17 +69,25 @@
 
         /* TEMA DARK (Gelap) */
         .dark {
-            --color-primary: #8174f8; /* Ungu sedikit lebih terang biar kontras */
+            --color-primary: #8174f8;
+            /* Ungu sedikit lebih terang biar kontras */
             --color-secondary: #60a5fa;
             --color-forest-green: #8cd95c;
-            --color-forest-light: #162411; /* Background hijau gelap */
-            --color-background: #0f1115; /* Latar utama super gelap */
-            --color-surface: #1a1d21; /* Latar kartu agak terang */
+            --color-forest-light: #162411;
+            /* Background hijau gelap */
+            --color-background: #0f1115;
+            /* Latar utama super gelap */
+            --color-surface: #1a1d21;
+            /* Latar kartu agak terang */
             --color-surface-container-lowest: #14171a;
-            --color-surface-container: #262a2f; /* Latar kontainer */
-            --color-on-surface: #f1f5f9; /* Teks putih terang */
-            --color-on-surface-variant: #94a3b8; /* Teks abu-abu mute */
-            --color-outline-variant: #334155; /* Garis border gelap */
+            --color-surface-container: #262a2f;
+            /* Latar kontainer */
+            --color-on-surface: #f1f5f9;
+            /* Teks putih terang */
+            --color-on-surface-variant: #94a3b8;
+            /* Teks abu-abu mute */
+            --color-outline-variant: #334155;
+            /* Garis border gelap */
         }
 
         html {
@@ -98,7 +106,8 @@
         }
 
         .dark .premium-shadow {
-            box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.2); /* Shadow lebih pekat di dark mode */
+            box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.2);
+            /* Shadow lebih pekat di dark mode */
         }
 
         .vehicle-card:hover {
@@ -142,21 +151,19 @@
 
     @include('layouts.navigation')
 
-    <!-- Padding bawah ditambahkan (pb-20) untuk memberi ruang pada bottom navigation di mobile -->
     <main class="flex-grow pt-16 pb-20 lg:pb-0">
         {{ $slot }}
     </main>
 
-    <!-- Margin bawah ditambahkan (mb-16) untuk mobile agar tidak tertutup bottom nav -->
-    <footer class="w-full py-6 border-t border-outline-variant/30 bg-surface mt-auto transition-colors duration-300 mb-16 lg:mb-0">
+    <footer class="w-full py-6 border-t border-outline-variant/30 dark:border-outline-variant/50 bg-surface mt-auto transition-colors duration-300 mb-16 lg:mb-0">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center">
             <div class="mb-4 md:mb-0 text-center md:text-left">
                 <span class="font-montserrat text-[18px] font-bold text-primary block mb-1">KlikRental</span>
-                <p class="font-inter text-[13px] text-on-surface-variant">© {{ date('Y') }} KlikRental Indonesia. Solusi Sewa Kendaraan Modern.</p>
+                <p class="font-inter text-[13px] text-on-surface-variant dark:text-gray-400">© {{ date('Y') }} KlikRental Indonesia. Solusi Sewa Kendaraan Modern.</p>
             </div>
             <nav class="flex gap-6">
-                <a class="font-inter text-[13px] text-on-surface-variant hover:text-primary transition-colors" href="{{ route('privacy') }}">Kebijakan Privasi</a>
-                <a class="font-inter text-[13px] text-on-surface-variant hover:text-primary transition-colors" href="{{ route('terms') }}">Syarat & Ketentuan</a>
+                <a class="font-inter text-[13px] text-on-surface-variant dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-colors" href="{{ route('privacy') }}">Kebijakan Privasi</a>
+                <a class="font-inter text-[13px] text-on-surface-variant dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-colors" href="{{ route('terms') }}">Syarat & Ketentuan</a>
             </nav>
         </div>
     </footer>
