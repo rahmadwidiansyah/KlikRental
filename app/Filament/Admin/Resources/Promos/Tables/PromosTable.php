@@ -7,6 +7,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Carbon\Carbon;
 
 class PromosTable
 {
@@ -14,21 +15,27 @@ class PromosTable
     {
         return $table
             ->columns([
+                // 1. GABUNGAN KODE PROMO & PERSENTASE DISKON
                 TextColumn::make('code')
-                    ->searchable(),
-                TextColumn::make('discount_percentage')
-                    ->numeric()
-                    ->sortable(),
+                    ->label('Kode Promo & Diskon')
+                    ->searchable()
+                    ->copyable()
+                    ->weight('bold')
+                    ->color('primary')
+                    ->description(fn ($record): string => 'Diskon: ' . $record->discount_percentage . '%'),
+                
+                // 2. GABUNGAN MAKSIMAL DISKON & MASA BERLAKU
                 TextColumn::make('max_discount')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('valid_until')
-                    ->date()
-                    ->sortable(),
+                    ->label('Maks. Diskon & Masa Berlaku')
+                    ->money('IDR', locale: 'id')
+                    ->sortable()
+                    ->description(fn ($record): string => 'S/d: ' . Carbon::parse($record->valid_until)->translatedFormat('d M Y')),
+                
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+                
                 TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
@@ -38,12 +45,13 @@ class PromosTable
                 //
             ])
             ->recordActions([
-                EditAction::make(),
+                EditAction::make()->iconButton(), // Diperkecil jadi ikon
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
-            ]);
+            ])
+            ->defaultSort('created_at', 'desc');
     }
 }

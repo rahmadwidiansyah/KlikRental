@@ -1,21 +1,16 @@
 <x-app-layout>
-    <!-- HERO SECTION (Dioptimalkan ukurannya) -->
     <section class="relative bg-primary pt-8 pb-10 overflow-hidden">
-        <!-- Abstract Background Ornaments -->
         <div class="absolute top-0 left-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -ml-20 -mt-20"></div>
         <div class="absolute bottom-0 right-0 w-64 h-64 bg-black/10 rounded-full blur-2xl -mb-10 -mr-10"></div>
         <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.05] pointer-events-none"></div>
         
         <div class="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center">
-            
             <h1 class="font-montserrat text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-3 tracking-tight leading-tight">
                 Mendigitalisasi <span class="text-white/90">Mobilitas Anda.</span>
             </h1>
-            
             <p class="font-inter text-[14px] md:text-[15px] text-white/80 max-w-2xl mx-auto leading-relaxed mb-4">
                 KlikRental hadir sebagai solusi sistem informasi manajemen rental kendaraan modern. Kami memastikan pengalaman sewa yang transparan, otomatis, dan 100% tanpa ribet.
             </p>
-
             <div class="flex flex-wrap justify-center gap-3 w-full max-w-3xl">
                 <div class="flex items-center gap-1.5 bg-white/10 px-4 py-1.5 rounded-full text-white font-inter text-[12px] font-semibold border border-white/20 shadow-sm">
                     <span class="material-symbols-outlined text-[16px]">rocket_launch</span>
@@ -25,10 +20,8 @@
         </div>
     </section>
 
-    <!-- VISI & MISI SECTION (Overlap tipis -mt-6) -->
     <section class="relative -mt-6 z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Visi -->
             <div class="bg-surface rounded-2xl p-8 shadow-xl border border-outline-variant/30 premium-shadow flex flex-col justify-center transition-transform hover:-translate-y-1 duration-300">
                 <div class="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center text-primary mb-5 border border-primary/20">
                     <span class="material-symbols-outlined text-[32px]">visibility</span>
@@ -39,7 +32,6 @@
                 </p>
             </div>
             
-            <!-- Misi -->
             <div class="bg-surface rounded-2xl p-8 shadow-xl border border-outline-variant/30 premium-shadow flex flex-col justify-center transition-transform hover:-translate-y-1 duration-300">
                 <div class="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center text-primary mb-5 border border-primary/20">
                     <span class="material-symbols-outlined text-[32px]">flag</span>
@@ -52,7 +44,6 @@
         </div>
     </section>
 
-    <!-- KEUNGGULAN SISTEM -->
     <section class="py-16 bg-surface-container-lowest">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12">
@@ -63,7 +54,6 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                <!-- Keunggulan 1 -->
                 <div class="text-center group">
                     <div class="w-20 h-20 mx-auto bg-surface border border-outline-variant/40 rounded-full flex items-center justify-center text-primary mb-5 premium-shadow group-hover:scale-110 group-hover:border-primary/50 transition-all duration-300">
                         <span class="material-symbols-outlined text-[36px]">event_available</span>
@@ -72,7 +62,6 @@
                     <p class="font-inter text-[13.5px] text-on-surface-variant leading-relaxed">Sistem sinkronisasi <i>real-time</i> kami mengunci ketersediaan armada, menjamin mobil pesanan Anda pasti tersedia.</p>
                 </div>
 
-                <!-- Keunggulan 2 -->
                 <div class="text-center group">
                     <div class="w-20 h-20 mx-auto bg-surface border border-outline-variant/40 rounded-full flex items-center justify-center text-primary mb-5 premium-shadow group-hover:scale-110 group-hover:border-primary/50 transition-all duration-300">
                         <span class="material-symbols-outlined text-[36px]">receipt_long</span>
@@ -81,7 +70,6 @@
                     <p class="font-inter text-[13.5px] text-on-surface-variant leading-relaxed">Kalkulasi pintar untuk durasi, layanan supir, dan zona lokasi tanpa adanya biaya tersembunyi (<i>hidden fees</i>).</p>
                 </div>
 
-                <!-- Keunggulan 3 -->
                 <div class="text-center group">
                     <div class="w-20 h-20 mx-auto bg-surface border border-outline-variant/40 rounded-full flex items-center justify-center text-primary mb-5 premium-shadow group-hover:scale-110 group-hover:border-primary/50 transition-all duration-300">
                         <span class="material-symbols-outlined text-[36px]">car_repair</span>
@@ -90,7 +78,6 @@
                     <p class="font-inter text-[13.5px] text-on-surface-variant leading-relaxed">Setiap kendaraan melewati proses inspeksi ketat untuk menjamin kebersihan, performa mesin, dan kenyamanan Anda.</p>
                 </div>
 
-                <!-- Keunggulan 4 -->
                 <div class="text-center group">
                     <div class="w-20 h-20 mx-auto bg-surface border border-outline-variant/40 rounded-full flex items-center justify-center text-primary mb-5 premium-shadow group-hover:scale-110 group-hover:border-primary/50 transition-all duration-300">
                         <span class="material-symbols-outlined text-[36px]">mark_email_unread</span>
@@ -102,7 +89,6 @@
         </div>
     </section>
 
-    <!-- TIM PENGEMBANG (KELOMPOK 6) -->
     <section class="py-16 bg-surface border-t border-outline-variant/30">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12">
@@ -113,7 +99,6 @@
                 </p>
             </div>
 
-            <!-- Dosen Pembimbing -->
             <div class="flex justify-center mb-10">
                 <div class="bg-surface-container-lowest border border-primary/20 rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-5 premium-shadow w-full max-w-lg hover:border-primary/50 transition-all">
                     <div class="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center shrink-0 border border-primary/30 text-primary">
@@ -127,48 +112,27 @@
                 </div>
             </div>
 
-            <!-- Anggota Tim -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <!-- PM -->
+                @forelse($teamMembers as $member)
                 <div class="bg-surface border border-outline-variant/40 rounded-2xl p-6 text-center premium-shadow hover:-translate-y-2 hover:border-primary/40 transition-all duration-300">
                     <div class="w-24 h-24 mx-auto rounded-full bg-surface-container flex items-center justify-center mb-4 border-4 border-surface shadow-md">
-                        <img src="https://ui-avatars.com/api/?name=Rahmad+Widiansyah&background=e4dfff&color=140067&size=128" alt="Rahmad" class="w-full h-full rounded-full object-cover">
+                        <img src="{{ $member->photo ? asset('storage/' . $member->photo) : 'https://ui-avatars.com/api/?name='.urlencode($member->name).'&background=e4dfff&color=140067&size=128' }}" 
+                             alt="{{ $member->name }}" 
+                             class="w-full h-full rounded-full object-cover">
                     </div>
-                    <h4 class="font-montserrat font-bold text-[16px] text-on-surface">Rahmad Widiansyah</h4>
-                    <span class="font-inter text-[12px] font-medium text-primary bg-primary/10 px-3 py-1 rounded-full mt-2 inline-block">Project Manager & SA</span>
+                    <h4 class="font-montserrat font-bold text-[16px] text-on-surface">{{ $member->name }}</h4>
+                    <span class="font-inter text-[12px] font-medium text-primary bg-primary/10 px-3 py-1 rounded-full mt-2 inline-block">{{ $member->role }}</span>
                 </div>
-
-                <!-- Frontend -->
-                <div class="bg-surface border border-outline-variant/40 rounded-2xl p-6 text-center premium-shadow hover:-translate-y-2 hover:border-primary/40 transition-all duration-300">
-                    <div class="w-24 h-24 mx-auto rounded-full bg-surface-container flex items-center justify-center mb-4 border-4 border-surface shadow-md">
-                        <img src="https://ui-avatars.com/api/?name=Ilham+Puji&background=e4dfff&color=140067&size=128" alt="Ilham" class="w-full h-full rounded-full object-cover">
-                    </div>
-                    <h4 class="font-montserrat font-bold text-[16px] text-on-surface">Ilham Puji Wira P.</h4>
-                    <span class="font-inter text-[12px] font-medium text-secondary bg-secondary/10 px-3 py-1 rounded-full mt-2 inline-block">Frontend Developer</span>
+                @empty
+                <div class="col-span-full text-center py-10 text-on-surface-variant">
+                    <span class="material-symbols-outlined text-[40px] mb-2 opacity-50">group_off</span>
+                    <p class="font-inter text-sm">Belum ada data anggota tim yang ditambahkan.</p>
                 </div>
-
-                <!-- UI/UX -->
-                <div class="bg-surface border border-outline-variant/40 rounded-2xl p-6 text-center premium-shadow hover:-translate-y-2 hover:border-primary/40 transition-all duration-300">
-                    <div class="w-24 h-24 mx-auto rounded-full bg-surface-container flex items-center justify-center mb-4 border-4 border-surface shadow-md">
-                        <img src="https://ui-avatars.com/api/?name=Iqbal+Hamdani&background=e4dfff&color=140067&size=128" alt="Iqbal" class="w-full h-full rounded-full object-cover">
-                    </div>
-                    <h4 class="font-montserrat font-bold text-[16px] text-on-surface">Iqbal Hamdani</h4>
-                    <span class="font-inter text-[12px] font-medium text-pink-600 bg-pink-50 px-3 py-1 rounded-full mt-2 inline-block">UI/UX Designer</span>
-                </div>
-
-                <!-- Backend -->
-                <div class="bg-surface border border-outline-variant/40 rounded-2xl p-6 text-center premium-shadow hover:-translate-y-2 hover:border-primary/40 transition-all duration-300">
-                    <div class="w-24 h-24 mx-auto rounded-full bg-surface-container flex items-center justify-center mb-4 border-4 border-surface shadow-md">
-                        <img src="https://ui-avatars.com/api/?name=Fengki+Andriansyah&background=e4dfff&color=140067&size=128" alt="Fengki" class="w-full h-full rounded-full object-cover">
-                    </div>
-                    <h4 class="font-montserrat font-bold text-[16px] text-on-surface">Fengki Andriansyah</h4>
-                    <span class="font-inter text-[12px] font-medium text-forest-green bg-forest-light px-3 py-1 rounded-full mt-2 inline-block">Backend Developer</span>
-                </div>
+                @endforelse
             </div>
         </div>
     </section>
 
-    <!-- CALL TO ACTION -->
     <section class="py-16 bg-primary relative overflow-hidden">
         <div class="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent"></div>
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">

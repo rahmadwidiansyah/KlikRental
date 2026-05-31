@@ -2,11 +2,15 @@
 
 namespace App\Filament\Admin\Resources\Bookings\Tables;
 
+// PERHATIKAN: Namespace sudah dikembalikan sesuai kode aslimu
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\SelectColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Carbon\Carbon;
 
 class BookingsTable
 {
@@ -14,63 +18,64 @@ class BookingsTable
     {
         return $table
             ->columns([
+                // 1. GABUNGAN KODE ORDER & PELANGGAN
                 TextColumn::make('booking_code')
-                    ->label('Kode')
+                    ->label('Order & Pelanggan')
                     ->searchable()
-                    ->copyable() // Bisa di-klik untuk copy kode
-                    ->weight('bold'),
+                    ->copyable()
+                    ->weight('bold')
+                    ->description(fn ($record): string => $record->user->name ?? 'Unknown'),
 
-                TextColumn::make('user.name')
-                    ->label('Pelanggan')
-                    ->searchable()
-                    ->sortable()
-                    ->limit(20), // Biar kalau nama pelanggan panjang banget, otomatis dipotong pakai "..."
-
+                // 2. GABUNGAN KENDARAAN & TOTAL HARGA
                 TextColumn::make('vehicle.name')
-                    ->label('Kendaraan')
+                    ->label('Kendaraan & Total')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->description(fn ($record): string => 'Rp ' . number_format($record->total_price, 0, ',', '.')),
 
+                // 3. JADWAL SEWA (Tanggal Ambil di atas, Tanggal Kembali di bawah)
                 TextColumn::make('start_date')
-                    ->label('Mulai Sewa')
+                    ->label('Jadwal Sewa')
                     ->dateTime('d M Y, H:i')
                     ->sortable()
-                    ->toggleable(),
+                    ->description(fn ($record): string => 's/d ' . Carbon::parse($record->end_date)->format('d M Y, H:i')),
 
-                TextColumn::make('end_date')
-                    ->label('Selesai Sewa')
-                    ->dateTime('d M Y, H:i')
-                    ->sortable()
-                    ->toggleable(),
-
-                TextColumn::make('total_price')
-                    ->label('Total Harga')
-                    ->money('IDR', locale: 'id') // Format langsung ke Rupiah
+                // 4. STATUS (Bisa di-klik dan diubah langsung tanpa masuk ke Edit)
+                SelectColumn::make('status')
+                    ->label('Status')
+                    ->options([
+                        'pending' => 'Pending',
+                        'paid' => 'Paid',
+                        'in_use' => 'In Use',
+                        'late' => 'Late',
+                        'completed' => 'Completed',
+                        'cancelled' => 'Cancelled',
+                    ])
+                    ->selectablePlaceholder(false)
                     ->sortable(),
-
-                TextColumn::make('status')
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'pending' => 'warning',
-                        'paid' => 'info',
-                        'in_use' => 'primary',
-                        'late' => 'danger',
-                        'completed' => 'success',
-                        'cancelled' => 'danger',
-                        default => 'gray',
-                    }),
             ])
             ->filters([
-                // Tambahkan filter status atau tanggal di sini nanti kalau butuh
+                // Filter Status agar shortcut dari Dashboard bisa berjalan
+                SelectFilter::make('status')
+                    ->options([
+                        'pending' => 'Pending',
+                        'paid' => 'Paid',
+                        'in_use' => 'In Use',
+                        'late' => 'Late',
+                        'completed' => 'Completed',
+                        'cancelled' => 'Cancelled',
+                    ]),
             ])
+            // PERHATIKAN: Menggunakan recordActions sesuai kode aslimu
             ->recordActions([
-                EditAction::make(),
+                EditAction::make()->iconButton(),
             ])
+            // PERHATIKAN: Menggunakan toolbarActions sesuai kode aslimu
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
             ])
-            ->defaultSort('created_at', 'desc'); // Urutkan dari pesanan terbaru
+            ->defaultSort('created_at', 'desc');
     }
-};
+}

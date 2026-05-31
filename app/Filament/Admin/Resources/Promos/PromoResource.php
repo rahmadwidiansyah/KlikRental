@@ -16,10 +16,9 @@ use Filament\Tables\Table;
 
 class PromoResource extends Resource
 {
-    protected static ?string $model = Promo::class;
+protected static ?string $model = Promo::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-
+protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-tag';
     public static function form(Schema $schema): Schema
     {
         return PromoForm::configure($schema);

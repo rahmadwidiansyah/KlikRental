@@ -16,10 +16,9 @@ use Filament\Tables\Table;
 
 class ZoneResource extends Resource
 {
-    protected static ?string $model = Zone::class;
+protected static ?string $model = Zone::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-
+protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-map-pin';
     public static function form(Schema $schema): Schema
     {
         return ZoneForm::configure($schema);
