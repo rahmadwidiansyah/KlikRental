@@ -24,24 +24,28 @@ class MonitorBookingStart extends Command
         // ==========================================
         $targetReminderTime = $now->copy()->addMinutes(30);
         
-        // Eager load user, vehicle, dan driver sekaligus
+        // [LOG SPY]: Cek jam dan parameter pencarian H-30
+        Log::info("[CRON MONITOR-START] Cek Reminder H-30. Waktu sekarang: {$now->toDateTimeString()}. Cari start_date <= {$targetReminderTime->toDateTimeString()}");
+        
         $reminderBookings = Booking::with(['user', 'vehicle', 'driver'])
             ->whereIn('status', $pendingStatuses)
             ->where('start_date', '<=', $targetReminderTime)
             ->where('start_date', '>', $now)
             ->get();
 
+        Log::info("[CRON MONITOR-START] Ditemukan " . $reminderBookings->count() . " booking untuk Reminder H-30.");
+
         foreach ($reminderBookings as $booking) {
             $cacheKey = 'pickup_reminder_sent_' . $booking->id;
 
             if (!Cache::has($cacheKey)) {
-                // Hanya kirim 1 Webhook gabungan di sini
                 $this->sendWebhook($booking, 'reminder');
-
-                // Set cache agar tidak dikirim berulang (expired 2 jam setelah start_date)
                 Cache::put($cacheKey, true, Carbon::parse($booking->start_date)->addHours(2));
                 
                 $this->info('✅ Reminder H-30m (Gabungan) terkirim untuk: ' . $booking->booking_code);
+                Log::info("[CRON MONITOR-START] Berhasil kirim Webhook Reminder untuk: {$booking->booking_code}");
+            } else {
+                Log::info("[CRON MONITOR-START] SKIP (Cache Aktif) Webhook Reminder untuk: {$booking->booking_code}");
             }
         }
 
@@ -49,28 +53,37 @@ class MonitorBookingStart extends Command
         // 2. SKENARIO H+10 MENIT (ESKALASI ADMIN)
         // ==========================================
         $targetEscalationTime = $now->copy()->subMinutes(10);
+        $batasBawahEscalation = $now->copy()->subHours(12);
+
+        // [LOG SPY]: Cek jam dan parameter pencarian Eskalasi
+        Log::info("[CRON MONITOR-START] Cek Eskalasi H+10. Cari start_date antara {$batasBawahEscalation->toDateTimeString()} s/d {$targetEscalationTime->toDateTimeString()}");
         
         $escalationBookings = Booking::with(['user', 'vehicle', 'driver'])
             ->whereIn('status', $pendingStatuses)
             ->where('start_date', '<=', $targetEscalationTime)
-            ->where('start_date', '>', $now->copy()->subHours(12)) 
+            ->where('start_date', '>', $batasBawahEscalation) 
             ->get();
+
+        Log::info("[CRON MONITOR-START] Ditemukan " . $escalationBookings->count() . " booking untuk Eskalasi Admin.");
 
         foreach ($escalationBookings as $booking) {
             $cacheKey = 'pickup_escalation_sent_' . $booking->id;
 
             if (!Cache::has($cacheKey)) {
                 $this->sendWebhook($booking, 'escalation');
-                
                 Cache::put($cacheKey, true, Carbon::parse($booking->start_date)->addHours(12));
                 
                 $this->info('🚨 Eskalasi H+10m terkirim (Admin) untuk: ' . $booking->booking_code);
+                Log::info("[CRON MONITOR-START] Berhasil kirim Webhook Eskalasi untuk: {$booking->booking_code}");
+            } else {
+                Log::info("[CRON MONITOR-START] SKIP (Cache Aktif) Webhook Eskalasi untuk: {$booking->booking_code}");
             }
         }
     }
 
     private function sendWebhook($booking, $type)
     {
+        // (Isi function sendWebhook tetap sama persis seperti kode aslimu)
         $webhookUrl = env('N8N_WEBHOOK_URL');
         $adminPhone = env('ADMIN_PHONE', '081234567890');
 
@@ -82,32 +95,23 @@ class MonitorBookingStart extends Command
         $startDateStr = Carbon::parse($booking->start_date)->format('Y-m-d H:i:s');
         $customerPhone = $booking->user->phone_number ?? $booking->user->phone ?? '';
         
-        // Bersihkan nomor HP untuk format wa.me di n8n
         $cleanCustomerPhone = preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', $customerPhone));
 
         if ($type === 'reminder') {
-            // WEBHOOK GABUNGAN UNTUK H-30 MENIT
             $payload = [
                 'event'            => 'booking_pickup_reminder',
                 'booking_code'     => $booking->booking_code,
                 'vehicle_name'     => $booking->vehicle->name ?? 'Kendaraan',
                 'start_date'       => $startDateStr,
-                
-                // Data Customer
                 'customer_name'    => $booking->user->name ?? 'Customer',
                 'customer_phone'   => $customerPhone,
-                
-                // Data Driver (Otomatis terisi jika ada driver, null jika lepas kunci)
                 'has_driver'       => $booking->driver_id ? true : false,
                 'driver_name'      => $booking->driver->name ?? null,
                 'driver_phone'     => $booking->driver->phone_number ?? null,
-                
-                // Opsi teks pesan mentah (bisa dipakai atau di-ignore di n8n)
                 'message_customer' => "Halo {$booking->user->name}, pengingat bahwa jadwal sewa {$booking->vehicle->name} Anda akan dimulai dalam 30 menit ke depan. Mohon siapkan dokumen persyaratan untuk proses serah terima.",
                 'message_driver'   => $booking->driver_id ? "Halo {$booking->driver->name}, pengingat jadwal tugas Anda untuk pesanan {$booking->booking_code} akan dimulai dalam 30 menit. Pemesan: {$booking->user->name} (wa.me/{$cleanCustomerPhone})." : null
             ];
         } else {
-            // WEBHOOK ESKALASI UNTUK ADMIN (H+10 MENIT)
             $payload = [
                 'event'            => 'booking_pickup_escalation',
                 'booking_code'     => $booking->booking_code,

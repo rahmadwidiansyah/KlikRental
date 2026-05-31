@@ -17,15 +17,18 @@ class SendReturnReminder extends Command
     public function handle()
     {
         $now = Carbon::now();
-        // Target waktu adalah 2 jam dari sekarang
         $targetTime = $now->copy()->addHours(2);
 
-        // Cari booking yang sedang dipakai dan waktu selesainya dalam 2 jam ke depan
+        // [LOG SPY]: Cek parameter
+        Log::info("[CRON SEND-REMINDER] Cek Pengembalian H-2 Jam. Waktu sekarang: {$now->toDateTimeString()}. Cari end_date <= {$targetTime->toDateTimeString()}");
+
         $bookings = Booking::with(['user', 'vehicle', 'driver'])
             ->where('status', 'in_use')
             ->where('end_date', '<=', $targetTime)
             ->where('end_date', '>', $now)
             ->get();
+
+        Log::info("[CRON SEND-REMINDER] Ditemukan " . $bookings->count() . " booking untuk pengingat pengembalian.");
 
         if ($bookings->isEmpty()) {
             $this->info('Tidak ada booking yang mendekati waktu pengembalian.');
@@ -33,22 +36,23 @@ class SendReturnReminder extends Command
         }
 
         foreach ($bookings as $booking) {
-            // Gunakan Cache untuk memastikan webhook hanya dikirim 1x per transaksi
             $cacheKey = 'reminder_sent_' . $booking->id;
 
             if (!Cache::has($cacheKey)) {
                 $this->sendWebhookToN8n($booking);
-
-                // Set cache agar tidak terkirim lagi. Cache akan otomatis hilang setelah end_date
                 Cache::put($cacheKey, true, Carbon::parse($booking->end_date));
                 
                 $this->info('Webhook pengingat terkirim untuk Booking ID: ' . $booking->booking_code);
+                Log::info("[CRON SEND-REMINDER] Berhasil kirim Webhook untuk: {$booking->booking_code}");
+            } else {
+                Log::info("[CRON SEND-REMINDER] SKIP (Cache Aktif) Webhook untuk: {$booking->booking_code}");
             }
         }
     }
 
     private function sendWebhookToN8n($booking)
     {
+        // (Isi function ini tetap sama persis)
         $webhookUrl = env('N8N_WEBHOOK_URL');
 
         if (!$webhookUrl) {
@@ -59,17 +63,11 @@ class SendReturnReminder extends Command
         $payload = [
             'event'          => 'booking_reminder_2_hours',
             'booking_code'   => $booking->booking_code,
-            
-            // Data Customer
             'customer_name'  => $booking->user->name ?? 'Customer',
             'customer_phone' => $booking->user->phone_number ?? $booking->user->phone ?? '', 
-            
-            // Data Driver (Opsional)
             'has_driver'     => $booking->driver_id ? true : false,
             'driver_name'    => $booking->driver->name ?? null,
             'driver_phone'   => $booking->driver->phone_number ?? null,
-            
-            // Detail Waktu
             'vehicle_name'   => $booking->vehicle->name ?? 'Kendaraan',
             'end_date'       => Carbon::parse($booking->end_date)->format('Y-m-d H:i:s'),
             'time_remaining' => '2 Jam',
