@@ -16,10 +16,9 @@ use Filament\Tables\Table;
 
 class VehicleResource extends Resource
 {
-    protected static ?string $model = Vehicle::class;
+protected static ?string $model = Vehicle::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-
+protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-key';
     public static function form(Schema $schema): Schema
     {
         return VehicleForm::configure($schema);

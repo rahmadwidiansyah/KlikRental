@@ -8,8 +8,8 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Command bawaan untuk update status in_use & late
+// Command bawaan
 Schedule::command('booking:update-status')->everyMinute();
+Schedule::command('booking:send-reminder')->everyMinute(); 
 
-// Command BARU untuk pengingat 2 jam sebelum selesai
-Schedule::command('booking:send-reminder')->everyMinute();
+Schedule::command('booking:monitor-start')->everyMinute();

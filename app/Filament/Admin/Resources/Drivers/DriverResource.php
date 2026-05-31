@@ -16,10 +16,9 @@ use Filament\Tables\Table;
 
 class DriverResource extends Resource
 {
-    protected static ?string $model = Driver::class;
+protected static ?string $model = Driver::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-
+protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-identification';
     public static function form(Schema $schema): Schema
     {
         return DriverForm::configure($schema);

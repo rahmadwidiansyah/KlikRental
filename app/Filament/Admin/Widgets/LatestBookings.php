@@ -6,55 +6,50 @@ use App\Models\Booking;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\SelectColumn;
+use Carbon\Carbon;
 
 class LatestBookings extends BaseWidget
 {
-    // Set urutan ke-2 (di bawah Stats Overview)
     protected static ?int $sort = 2;
-
-    // Buat widget ini mengambil lebar penuh layar (full width)
     protected int | string | array $columnSpan = 'full';
 
     public function table(Table $table): Table
     {
         return $table
             ->query(
-                // Mengambil 5 data transaksi terbaru
                 Booking::query()->latest()->limit(5)
             )
             ->columns([
-                Tables\Columns\TextColumn::make('booking_code')
-                    ->label('Kode Booking')
+                TextColumn::make('booking_code')
+                    ->label('Order & Pelanggan')
                     ->searchable()
-                    ->weight('bold'),
+                    ->weight('bold')
+                    ->description(fn ($record): string => $record->user->name ?? 'Unknown'),
                     
-                Tables\Columns\TextColumn::make('user.name')
-                    ->label('Pelanggan'),
+                TextColumn::make('vehicle.name')
+                    ->label('Kendaraan & Total')
+                    ->description(fn ($record): string => 'Rp ' . number_format($record->total_price, 0, ',', '.')),
                     
-                Tables\Columns\TextColumn::make('vehicle.name')
-                    ->label('Kendaraan'),
+                TextColumn::make('start_date')
+                    ->label('Jadwal Sewa')
+                    ->dateTime('d M Y, H:i')
+                    ->description(fn ($record): string => 's/d ' . Carbon::parse($record->end_date)->format('d M Y, H:i')),
                     
-                Tables\Columns\TextColumn::make('start_date')
-                    ->label('Tgl Ambil')
-                    ->dateTime('d M Y H:i'),
-                    
-                Tables\Columns\TextColumn::make('total_price')
-                    ->label('Total Bayar')
-                    ->money('IDR', locale: 'id'),
-                    
-                Tables\Columns\TextColumn::make('status')
+                // Status Editable langsung di Dashboard
+                SelectColumn::make('status')
                     ->label('Status')
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'pending' => 'gray',
-                        'paid' => 'info',
-                        'in_use' => 'warning',
-                        'completed' => 'success',
-                        'cancelled' => 'danger',
-                        default => 'primary',
-                    }),
+                    ->options([
+                        'pending' => 'Pending',
+                        'paid' => 'Paid',
+                        'in_use' => 'In Use',
+                        'late' => 'Late',
+                        'completed' => 'Completed',
+                        'cancelled' => 'Cancelled',
+                    ])
+                    ->selectablePlaceholder(false),
             ])
-            // Matikan paginasi karena kita cuma mau lihat 5 data terbaru di dashboard
             ->paginated(false); 
     }
 }

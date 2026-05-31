@@ -7,7 +7,8 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\MidtransController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\Auth\GoogleController;
-
+use App\Models\Zone;
+use App\Models\TeamMember;
 // =================================================================
 // --- ROUTE PUBLIK (Bisa diakses oleh Guest tanpa perlu login) ---
 // =================================================================
@@ -23,9 +24,15 @@ Route::get('/kendaraan/{id}', [HomeController::class, 'show'])->name('vehicle.sh
 // Informasi supir, CS, dan About
 Route::get('/driver-kami', [DriverController::class, 'index'])->name('driver.index');
 Route::get('/driver-kami/{id}', [DriverController::class, 'show'])->name('driver.show');
-Route::get('/cs', function () { return view('cs'); })->name('cs');
-Route::get('/about', function () { return view('about'); })->name('about');
-Route::get('/kebijakan-privasi', function () { return view('privacy'); })->name('privacy');
+
+// <-- PERUBAHAN: Modifikasi rute CS untuk mengirim data kantor cabang -->
+Route::get('/cs', function () { 
+    $officeZones = Zone::where('is_office', true)->where('is_active', true)->get();
+    return view('cs', compact('officeZones')); 
+})->name('cs');
+
+Route::get('/about', function () {$teamMembers = TeamMember::all(); return view('about', compact('teamMembers')); 
+})->name('about');Route::get('/kebijakan-privasi', function () { return view('privacy'); })->name('privacy');
 Route::get('/syarat-ketentuan', function () {return view('terms'); })->name('terms');
 
 // Webhook Midtrans & Google OAuth
