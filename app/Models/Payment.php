@@ -3,8 +3,21 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Payment extends Model
 {
-    //
+    protected $fillable = [
+        'booking_id',
+        'transaction_id',
+        'payment_type',
+        'gross_amount',
+        'transaction_status',
+        'settlement_time',
+    ];
+
+    public function booking(): BelongsTo
+    {
+        return $this->belongsTo(Booking::class);
+    }
 }

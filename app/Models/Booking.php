@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class Booking extends Model
 {
@@ -23,7 +24,6 @@ class Booking extends Model
         'tax_rate',        
         'tax_amount',       
         'total_price',
-        'payment_status',
         'status'
     ];
     
@@ -58,6 +58,72 @@ class Booking extends Model
                 }
             }
         });
+    }
+
+    /**
+     * Centralized Pricing Logic
+     * Digunakan oleh Controller (Customer) dan nantinya oleh Filament (Admin)
+     */
+    public static function calculatePricing($data)
+    {
+        $start = Carbon::parse($data['start_date']);
+        $end = Carbon::parse($data['end_date']);
+        
+        $durationHours = $start->diffInHours($end);
+        $durationDays = ceil($durationHours / 24) ?: 1;
+
+        $vehicle = Vehicle::findOrFail($data['vehicle_id']);
+        $pickupZone = Zone::findOrFail($data['pickup_zone_id']);
+        $dropoffZone = Zone::findOrFail($data['dropoff_zone_id']);
+        
+        $driverRate = 0;
+        if (!empty($data['driver_id'])) {
+            $driver = Driver::find($data['driver_id']);
+            $driverRate = $driver ? $driver->daily_rate : 0;
+        }
+
+        $vehicleCost = $vehicle->price_per_day * $durationDays;
+        $driverCost = $driverRate * $durationDays;
+        $pickupCost = $pickupZone->additional_cost;
+        $dropoffCost = $dropoffZone->additional_cost;
+
+        $subtotal = $vehicleCost + $driverCost + $pickupCost + $dropoffCost;
+
+        $promoDiscount = 0;
+        if (!empty($data['promo_code'])) {
+            $promo = Promo::where('code', $data['promo_code'])
+                ->where('valid_until', '>=', now())
+                ->first();
+
+            if ($promo) {
+                $promoDiscount = ($promo->discount_percentage / 100) * $subtotal;
+                if ($promoDiscount > $promo->max_discount) {
+                    $promoDiscount = $promo->max_discount;
+                }
+            }
+        }
+
+        $priceAfterPromo = $subtotal - $promoDiscount;
+        $taxRate = 11;
+        $taxAmount = $priceAfterPromo * ($taxRate / 100);
+        $totalPrice = $priceAfterPromo + $taxAmount;
+
+        return [
+            'subtotal' => $subtotal,
+            'tax_rate' => $taxRate,
+            'tax_amount' => $taxAmount,
+            'total_price' => $totalPrice,
+            'duration_days' => $durationDays,
+            'promo_discount' => $promoDiscount
+        ];
+    }
+
+    /**
+     * Accessor untuk mengecek apakah ini order di kantor (Roadmap)
+     */
+    public function getIsOfficeOrderAttribute(): bool
+    {
+        return $this->pickupZone?->is_office ?? false;
     }
 
     // Relasi ke User (Customer)

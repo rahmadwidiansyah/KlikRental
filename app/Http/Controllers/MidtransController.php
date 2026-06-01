@@ -110,10 +110,15 @@ class MidtransController extends Controller
             'total_price'    => $booking->total_price,
         ];
 
+        // Security: Tambahkan Secret Token untuk validasi di sisi n8n
+        $n8nSecret = env('N8N_WEBHOOK_SECRET', 'klikrental_secret_token');
+
         try {
             // Pakai timeout 5 detik biar proses balasan ke server Midtrans nggak gantung
             // kalau misal server n8n lagi mati/lambat
-            Http::timeout(5)->post($webhookUrl, $payload);
+            Http::withHeaders([
+                'X-N8N-SECRET' => $n8nSecret
+            ])->timeout(5)->post($webhookUrl, $payload);
         } catch (\Exception $e) {
             Log::error('GAGAL KIRIM WEBHOOK N8N: ' . $e->getMessage());
         }

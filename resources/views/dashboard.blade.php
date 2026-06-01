@@ -137,30 +137,24 @@
                             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                                 @foreach($groupedVehicles[$className]->take(4) as $car) <a href="{{ route('vehicle.show', $car->id) }}" class="vehicle-card block bg-surface border border-outline-variant/60 rounded-xl overflow-hidden transition-all duration-300 premium-shadow group relative flex flex-col hover:border-primary/50 hover:shadow-lg cursor-pointer">
                                         
-                                        @if(isset($car->is_booked_today) && $car->is_booked_today)
-                                        <div class="absolute top-3 right-3 z-10">
-                                            <span class="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 px-2.5 py-0.5 rounded-full font-inter font-bold text-[10px] flex items-center gap-1">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-red-600 dark:bg-red-400 animate-pulse"></span> Disewa
-                                            </span>
-                                        </div>
-                                        @elseif($car->status === 'maintenance')
-                                        <div class="absolute top-3 right-3 z-10">
-                                            <span class="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 px-2.5 py-0.5 rounded-full font-inter font-bold text-[10px] flex items-center gap-1">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-red-600 dark:bg-red-400"></span> Perawatan
-                                            </span>
-                                        </div>
-                                        @elseif($car->status === 'rented')
-                                        <div class="absolute top-3 right-3 z-10">
-                                            <span class="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-900/50 px-2.5 py-0.5 rounded-full font-inter font-bold text-[10px] flex items-center gap-1">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse"></span> Disewa
-                                            </span>
-                                        </div>
-                                        @else
-                                        <div class="absolute top-3 right-3 z-10">
-                                            <span class="bg-forest-light text-forest-green border border-forest-green/20 px-2.5 py-0.5 rounded-full font-inter font-bold text-[10px] flex items-center gap-1">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-forest-green animate-pulse"></span> Tersedia
-                                            </span>
-                                        </div>
+                                         @if(isset($car->is_booked_today) && $car->is_booked_today)
+                                         <div class="absolute top-3 right-3 z-10">
+                                             <span class="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 px-2.5 py-0.5 rounded-full font-inter font-bold text-[10px] flex items-center gap-1">
+                                                 <span class="w-1.5 h-1.5 rounded-full bg-red-600 dark:bg-red-400 animate-pulse"></span> Disewa
+                                             </span>
+                                         </div>
+                                         @elseif(isset($car->is_maintenance) && $car->is_maintenance)
+                                         <div class="absolute top-3 right-3 z-10">
+                                             <span class="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-900/50 px-2.5 py-0.5 rounded-full font-inter font-bold text-[10px] flex items-center gap-1">
+                                                 <span class="w-1.5 h-1.5 rounded-full bg-red-600 dark:bg-red-400"></span> Perawatan
+                                             </span>
+                                         </div>
+                                         @else
+                                         <div class="absolute top-3 right-3 z-10">
+                                             <span class="bg-forest-light text-forest-green border border-forest-green/20 px-2.5 py-0.5 rounded-full font-inter font-bold text-[10px] flex items-center gap-1">
+                                                 <span class="w-1.5 h-1.5 rounded-full bg-forest-green animate-pulse"></span> Tersedia
+                                             </span>
+                                         </div>
                                         @endif
 
                                         <div class="h-44 overflow-hidden bg-surface-container flex items-center justify-center p-4 relative">
