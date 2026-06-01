@@ -52,15 +52,22 @@ Ruang lingkup sistem berfokus pada efisiensi manajerial *back-office* dan pengal
 
 ```mermaid
 flowchart TD
-    Customer[Customer] -->|Eksplorasi & Reservasi| Laravel[Laravel Application]
-    Laravel -->|Request Snap Token| Midtrans[Midtrans Payment Gateway]
-    Customer -->|Bayar Invoice (Snap)| Midtrans
-    Midtrans -->|Callback Webhook| Webhook[Laravel MidtransController]
-    Webhook -->|Ubah Status Pesanan| Laravel
-    Laravel -->|Trigger Event (HTTP POST)| n8n[n8n Automation Workflow]
-    n8n -->|Route & Template Logics| WAHA[WAHA - WhatsApp HTTP API]
-    WAHA -->|Broadcast Messages| WhatsApp[WhatsApp Client]
+    Customer["Customer"]
+    Laravel["Laravel Application"]
+    Midtrans["Midtrans Payment Gateway"]
+    Webhook["Laravel Midtrans Controller"]
+    N8N["n8n Workflow"]
+    WAHA["WAHA WhatsApp API"]
+    WhatsApp["WhatsApp Client"]
 
+    Customer -->|Eksplorasi dan Reservasi| Laravel
+    Laravel -->|Request Snap Token| Midtrans
+    Customer -->|Bayar Invoice| Midtrans
+    Midtrans -->|Webhook Callback| Webhook
+    Webhook -->|Update Status| Laravel
+    Laravel -->|Trigger Event| N8N
+    N8N -->|Route dan Template| WAHA
+    WAHA -->|Broadcast| WhatsApp
 ```
 
 **Alur Data Teknis:**
