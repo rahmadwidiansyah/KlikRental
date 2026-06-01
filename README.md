@@ -38,7 +38,7 @@ Ruang lingkup sistem berfokus pada efisiensi manajerial *back-office* dan pengal
 
 ## Tech Stack
 
-* **Framework:** Laravel 11.x / PHP 8.4
+* **Framework:** Laravel 13.x / PHP 8.4
 * **Admin Panel:** Filament V4
 * **Database:** MySQL 8.0
 * **Frontend:** Tailwind CSS, Alpine.js, Vanilla JavaScript, Leaflet.js
@@ -74,13 +74,12 @@ flowchart TD
 Pelanggan berinteraksi penuh dengan antarmuka yang disajikan oleh Laravel. Saat pelanggan memproses *checkout*, Laravel menghasilkan *Snap Token* via Midtrans API. Pelanggan membayar melalui antarmuka Snap. Midtrans kemudian mengirimkan notifikasi *Webhook* (*server-to-server*) kembali ke Laravel (`/midtrans/callback`). Berdasarkan validasi pembayaran (*Settlement*), Laravel merubah *state* `Booking` menjadi `paid`. Setiap pergerakan *state* krusial pada transaksi, Laravel mengirimkan HTTP POST (berisi *JSON Payload*) ke n8n. n8n mendistribusikan *logic routing* kondisional (seperti apakah pesanan lepas kunci atau menggunakan supir) sebelum meneruskan pesan ke layanan WAHA untuk *broadcast* notifikasi ke perangkat seluler pengguna.
 
 ## Database Overview
-
-```mermaid
 erDiagram
     users {
         bigint id PK
         string name
         string email
+        datetime email_verified_at
         string password
         string phone_number
         string nik
@@ -89,11 +88,17 @@ erDiagram
         string sim_image_url
         enum role
         string google_id
+        string avatar
+        string remember_token
+        datetime created_at
+        datetime updated_at
     }
 
     vehicles {
         bigint id PK
         string name
+        string license_plate
+        enum class
         enum type
         enum transmission
         string fuel_type
@@ -101,6 +106,9 @@ erDiagram
         int luggage_capacity
         decimal price_per_day
         enum status
+        string image_url
+        datetime created_at
+        datetime updated_at
     }
 
     vehicle_images {
@@ -108,22 +116,33 @@ erDiagram
         bigint vehicle_id FK
         string image_url
         boolean is_primary
+        datetime created_at
+        datetime updated_at
     }
 
     zones {
         bigint id PK
         string zone_name
         decimal additional_cost
-        boolean is_office
         boolean is_active
+        boolean is_office
+        text address
+        text maps_link
+        decimal latitude
+        decimal longitude
+        datetime created_at
+        datetime updated_at
     }
 
     drivers {
         bigint id PK
         string name
-        string phone
+        string phone_number
         decimal daily_rate
+        string image_url
         enum status
+        datetime created_at
+        datetime updated_at
     }
     
     promos {
@@ -132,6 +151,9 @@ erDiagram
         int discount_percentage
         decimal max_discount
         date valid_until
+        boolean is_active
+        datetime created_at
+        datetime updated_at
     }
 
     bookings {
@@ -145,8 +167,15 @@ erDiagram
         bigint promo_id FK
         datetime start_date
         datetime end_date
+        decimal subtotal
+        integer tax_rate
+        decimal tax_amount
         decimal total_price
+        string payment_status
         enum status
+        decimal late_fee
+        datetime created_at
+        datetime updated_at
     }
 
     payments {
@@ -157,6 +186,8 @@ erDiagram
         decimal gross_amount
         string transaction_status
         datetime settlement_time
+        datetime created_at
+        datetime updated_at
     }
 
     reviews {
@@ -167,13 +198,17 @@ erDiagram
         int company_rating
         int driver_rating
         text comment
+        datetime created_at
+        datetime updated_at
     }
 
     team_members {
         bigint id PK
         string name
         string role
-        string image_url
+        string photo
+        datetime created_at
+        datetime updated_at
     }
 
     users ||--o{ bookings : "membuat"
@@ -184,7 +219,7 @@ erDiagram
     zones ||--o{ bookings : "sebagai titik jemput"
     zones ||--o{ bookings : "sebagai titik antar"
     promos ||--o{ bookings : "diterapkan pada"
-    bookings ||--o{ payments : "tercatat di"
+    bookings ||--o| payments : "tercatat di"
     bookings ||--o| reviews : "memiliki ulasan"
 
 ```
