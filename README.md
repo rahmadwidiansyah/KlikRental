@@ -75,6 +75,7 @@ Pelanggan berinteraksi penuh dengan antarmuka yang disajikan oleh Laravel. Saat 
 
 ## Database Overview
 erDiagram
+```
     users {
         bigint id PK
         string name
