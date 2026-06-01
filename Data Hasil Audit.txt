@@ -1,0 +1,672 @@
+# Audit Migration
+Berikut adalah hasil audit teknis domain bisnis berdasarkan struktur *Migration* dan *Model* yang Anda berikan.
+
+### Domain Model
+
+**Entitas Utama & Relasi Antar Tabel:**
+
+* **User (Pengguna):** Pusat identitas. Memiliki relasi ke `Booking` (sebagai penyewa) dan `Review` (sebagai pemberi ulasan).
+* **Vehicle (Armada):** Memiliki relasi *One-to-Many* ke `VehicleImage` (Galeri foto). Memiliki status ketersediaan dan klasifikasi (Standard/Premium/VIP).
+* **Driver (Supir):** Entitas mandiri (opsional dalam penyewaan). Memiliki tarif harian dan status ketersediaan.
+* **Zone (Zona Lokasi):** Digunakan ganda dalam relasi *Booking* (sebagai `pickup_zone_id` dan `dropoff_zone_id`). Mendukung titik koordinat (Lat/Long) dan penanda lokasi kantor (`is_office`).
+* **Promo (Diskon):** Entitas mandiri, digunakan opsional dalam *Booking*.
+* **Booking (Reservasi):** Pivot transaksi utama (Transaksional). Menghubungkan `User`, `Vehicle`, `Driver` (opsional), `Zone` (Jemput/Antar), dan `Promo` (opsional).
+* **Payment (Pembayaran):** Relasi *One-to-One* (Asumsi bisnis) atau *One-to-Many* dengan `Booking`. Menyimpan jejak transaksi *Payment Gateway*.
+* **Review (Ulasan):** Relasi spesifik ke `Booking` dan `User`.
+* **TeamMember:** Entitas statis, tampaknya digunakan untuk halaman *Company Profile* atau *Landing Page* (tidak terelasi dengan alur penyewaan utama).
+
+### Business Workflow
+
+**Fitur yang Benar-Benar Diimplementasikan:**
+
+* **Smart Avatar System:** Logika untuk membedakan *display picture* berdasarkan sumber (URL Google, Storage lokal, atau inisial UI-Avatars otomatis). Terintegrasi dengan antarmuka bawaan Filament.
+* **Perhitungan Pajak Terpusat:** *Booking* secara *default* membebankan tarif pajak 11% (`tax_rate`) yang dipisahkan kalkulasinya pada kolom `tax_amount`.
+* **Otomasi Status Inventaris (Event Driven):** Sinkronisasi otomatis ketersediaan Mobil dan Supir berdasarkan perubahan status `Booking` menggunakan fitur Eloquent `booted()`.
+* **Sistem Rating Multi-Aspek:** Penilaian dipecah menjadi 3 aspek spesifik: Kondisi Mobil, Pelayanan Perusahaan, dan Kinerja Supir (opsional).
+* **Manajemen Zona Kompleks:** Pemisahan antara zona lokasi *custom* dengan alamat kantor cabang (via *flag* `is_office`) beserta integrasi tautan Google Maps.
+
+### User Roles
+
+* **`admin`:** Memiliki hak istimewa berdasarkan *method* `canAccessPanel(Panel $panel)`. Dapat masuk ke *dashboard* Filament.
+* **`customer`:** *Role default* untuk pendaftar publik/Google OAuth. Tidak memiliki akses panel.
+* **`staff`:** Tersedia di *Migration* (sebagai nilai Enum), namun tidak ada logika pembatasan hak akses yang spesifik di model yang diberikan.
+
+### Booking Lifecycle
+
+**Status Transaksi & Alur Hidup (`Booking`):**
+
+1. **`pending`:** Status awal saat data penyewaan dibuat.
+2. **`paid`:** Pembayaran telah diselesaikan (menunggu waktu pengambilan).
+3. **`in_use`:** Kendaraan diserahkan ke pelanggan. **(Otomasi memicu:** Status `Vehicle` menjadi `rented`, `Driver` menjadi `on_duty`).
+4. **`late`:** Melewati tenggat waktu pengembalian. (Memicu perhitungan `late_fee`).
+5. **`completed`:** Penyewaan selesai normal. **(Otomasi memicu:** Status `Vehicle` dan `Driver` kembali `available`).
+6. **`cancelled`:** Transaksi batal. **(Otomasi memicu:** Status inventaris kembali `available`).
+
+### Payment Flow
+
+* Alur tabel sudah disiapkan untuk integrasi Midtrans.
+* Menyimpan ID transaksi dari pihak ketiga (`transaction_id`), tipe pembayaran, total kotor (`gross_amount`), dan waktu penyelesaian (`settlement_time`).
+* Status awal `transaction_status` bernilai `pending`.
+
+### Review System
+
+* Pelanggan hanya bisa memberikan 1 set ulasan per ID Transaksi (terhubung langsung ke `booking_id`).
+* Nilai `driver_rating` dapat dilewati (*nullable*) yang mengindikasikan sewa mobil lepas kunci.
+
+### README Notes
+
+**Hal yang wajib ditambahkan:**
+
+* Dokumentasi tentang fitur **Otomasi Ketersediaan Armada**. Jelaskan bahwa admin tidak perlu mengubah status Mobil/Supir secara manual saat mobil keluar/masuk, cukup ubah status *Booking* saja.
+* Catatan bahwa profil pelanggan mendukung *Single Sign-On* (Google) dan pengumpulan data identitas operasional (KTP, SIM, NIK).
+
+**Hal yang harus dihapus dari README lama (atau dipindahkan ke "Perbaikan Bug/TODO"):**
+*(Peringatan: Terdapat ketidaksesuaian/inkonsistensi antara file Model dan Migration yang harus segera diperbaiki pengembang sebelum fitur diklaim berjalan 100%)*
+
+* **Model `Promo`:** Properti `$fillable` mengizinkan pengisian `is_active`, tetapi *Migration* tabel `promos` **tidak memiliki** kolom `is_active`.
+* **Model `Booking`:** Properti `$fillable` mengizinkan `payment_status`, tetapi kolom ini **tidak ada** di *Migration* `bookings`.
+* **Model `Payment`:** File model saat ini benar-benar kosong (`//`). Belum ada pengaturan `$fillable`, `$guarded`, atau definisi relasi `belongsTo(Booking::class)` di dalamnya. Tulis di dokumentasi bahwa *Payment Controller / Webhook Midtrans* belum diikat ke Model Eloquent.
+...
+
+# Audit Filament
+Berikut adalah hasil audit teknis untuk panel administrasi (Filament V4) berdasarkan struktur *Resource*, *Page*, *Schema*, *Table*, dan *Widget* yang Anda lampirkan:
+
+### Dashboard Features
+
+Berdasarkan modul *Widgets* yang diimplementasikan:
+
+* **Stats Overview (Shortcut Cerdas):** 4 Kartu metrik utama (Order Hari Ini, Order Dibayar, Mobil Disewa, Omset Bulan Ini). Tiga kartu pertama memiliki URL tautan yang secara otomatis menerapkan *filter* pada tabel `BookingResource` saat diklik.
+* **Tabel Transaksi Terbaru (Latest Bookings):** Menampilkan 5 transaksi terakhir langsung di halaman *dashboard*. Admin dapat langsung mengubah **Status Transaksi** (*inline editable select*) tanpa harus masuk ke halaman detail/edit.
+* **Grafik Pendapatan (Revenue Chart):** Grafik garis (*Line Chart*) interaktif yang memetakan total omset kotor bulanan selama tahun berjalan (hanya menghitung transaksi berstatus `completed`).
+* **Grafik Ketersediaan (Vehicle Status):** Grafik donat (*Doughnut Chart*) yang memvisualisasikan rasio status seluruh armada (Tersedia, Disewa, Perawatan) secara *real-time*.
+
+### Data Management
+
+Berdasarkan *Resource* data master:
+
+* **Manajemen Armada (VehicleResource):** CRUD data mobil dengan spesifikasi detail (tipe, transmisi, kursi, bagasi). Mendukung unggah *Multiple Images* (Galeri) menggunakan `Repeater` dengan *toggle* `is_primary` untuk menentukan foto *thumbnail* utama.
+* **Manajemen Supir (DriverResource):** Pengelolaan data supir, nomor HP, foto profil, dan status penugasan. Menggunakan *fallback* API UI-Avatars otomatis jika foto tidak diunggah.
+* **Manajemen Zona & Lokasi (ZoneResource):** Mengelola titik lokasi beserta biaya tambahan (`additional_cost`). Terdapat pemisahan logika: Zona biasa (titik jemput/antar) vs Kantor Cabang (`is_office`) yang memiliki *field* alamat, *Latitude*, dan *Longitude*.
+* **Manajemen Promo (PromoResource):** Pembuatan kode diskon berdasarkan persentase dengan fitur *capping* atau batas maksimal nominal diskon (`max_discount`) dan masa berlaku.
+* **Manajemen Tim Pengembang (TeamMemberResource):** Data statis untuk profil nama, peran (*role*), dan foto (kemungkinan untuk *Company Profile* di halaman pelanggan).
+
+### Operational Features
+
+* **Pencarian Pintar (Smart Search):** Pada tabel Transaksi (Booking), admin dapat mencari data pemesanan secara fleksibel menggunakan **Nama Mobil** atau **Plat Nomor** (pencarian menembus relasi tabel).
+* **Auto-Generate Plat Nomor Lokal:** Saat menambah armada baru, sistem secara otomatis mengisi *placeholder* dan membuatkan plat nomor acak wilayah Semarang (H + 4 Angka + 2/3 Huruf) jika admin tidak mengisinya, dan memaksa format ke Huruf Kapital (*Capitalize*).
+* **Status Toggling Cepat:** Pada tabel Zona, admin dapat langsung mengaktifkan/menonaktifkan zona (*is_active*) atau mengubah status kantor (*is_office*) melalui *Toggle Column* tanpa perlu masuk ke form *Edit*.
+
+### Business Administration Features
+
+* **Pajak Bawaan (Default Tax):** Form `Booking` secara bawaan membebankan tarif pajak 11% (`tax_rate`) pada setiap pembuatan transaksi manual oleh Admin.
+* **Manajemen Siklus Pesanan Terpusat:** Admin memegang kendali penuh pada `BookingResource` untuk mengubah status alur penyewaan (*Pending, Paid, In Use, Late, Completed, Cancelled*).
+* **Kalkulasi Omset Aman:** Dasbor *Analytics* didesain kebal terhadap pesanan batal atau pesanan fiktif, karena `RevenueChart` dan metrik 'Omset Bulan Ini' hanya menjumlahkan `total_price` dari pesanan yang statusnya sudah `completed`.
+
+### README Notes
+
+**Hal yang wajib ditambahkan di README:**
+
+1. **Fitur Cerdas Filament:** Dokumentasikan adanya *Auto-Generate* Plat Nomor area Semarang (H) pada modul Armada.
+2. **Dashboard Analytics Interaktif:** Tambahkan penjelasan bahwa kartu metrik di *dashboard* bukan sekadar angka, melainkan berfungsi sebagai *Quick Filter Link* menuju data pesanan yang bersangkutan.
+3. **UI-Avatars Integration:** Sebutkan bahwa modul Supir dan Tim mendukung *fallback avatar* berbasis inisial nama jika foto gagal dimuat atau belum diunggah.
+4. **Inline Editing:** Catat bahwa status penyewaan (Booking) dapat langsung dieksekusi/diubah dari tabel *Dashboard* tanpa harus membuka menu Transaksi.
+
+**Hal yang harus dihapus dari README lama:**
+
+1. **Klaim "Kalkulasi Harga Dinamis" via Admin Panel:** Di form `BookingResource`, *subtotal*, *tax_amount*, dan *total_price* menggunakan input `TextInput::make()->numeric()` biasa tanpa logika *disable* atau kalkulasi *live* via Filament (*reactive*). Kalkulasi (otomatis) saat ini tampaknya hanya terjadi di sisi *frontend/customer*. Jika admin membuat transaksi manual dari panel, ia masih harus menghitung dan mengetik angkanya sendiri.
+...
+
+# Audit Routes
+Berikut adalah hasil analisis fitur publik dan pelanggan berdasarkan struktur *routing* dan fungsi *console command* yang Anda lampirkan:
+
+### Public Pages
+
+Dapat diakses oleh siapa saja tanpa memerlukan proses *login* (*Guest*).
+
+* **Beranda / Welcome:** `/` (Menampilkan halaman utama).
+* **Katalog Umum:** `/dashboard` (Menampilkan daftar kendaraan).
+* **Modul Kendaraan:**
+* Daftar Lengkap Kendaraan: `/vehicles`
+* Detail Spesifik Kendaraan: `/kendaraan/{id}`
+
+
+* **Modul Supir:**
+* Daftar Supir: `/driver-kami`
+* Detail Profil Supir: `/driver-kami/{id}`
+
+
+* **Informasi Perusahaan:**
+* Customer Service & Lokasi Kantor: `/cs` (Otomatis memuat data zona yang di-set sebagai kantor cabang).
+* Tentang Kami: `/about` (Memuat profil anggota tim).
+* Halaman Legal: Kebijakan Privasi (`/kebijakan-privasi`) & Syarat Ketentuan (`/syarat-ketentuan`).
+
+
+* **Autentikasi (Breeze & OAuth):**
+* Login, Register, Lupa Password, Reset Password.
+* Single Sign-On (SSO) Google: `/auth/google` & `/auth/google/callback`.
+
+
+
+---
+
+### Authenticated Customer Pages
+
+Hanya dapat diakses oleh pengguna yang sudah *login* dan memiliki *role* spesifik sebagai `customer`.
+
+* **Dasbor Pelanggan:** Mengelola riwayat pesanan pribadi melalui halaman `/my-bookings` yang akan memanggil `BookingController@index`.
+
+---
+
+### Booking Pages
+
+Rangkaian fitur untuk proses penyewaan kendaraan (Tergabung dalam *middleware* `auth` dan `role:customer`).
+
+* **Formulir Pemesanan:** `/booking/{vehicle}/create` (Halaman pengisian data sewa berdasarkan mobil yang dipilih).
+* **Kalkulasi Harga Dinamis:** `/booking/calculate-price` (Rute POST untuk menghitung total biaya, pajak, tarif supir, dan zona secara *real-time* sebelum pesanan dibuat).
+* **Proses Pembuatan Pesanan:** `/booking` (Rute POST untuk menyimpan data *booking* ke *database*).
+* **Faktur & Detail Pesanan:** `/booking/{booking_code}/detail` (Halaman rincian tagihan dan status pesanan).
+
+---
+
+### Profile Pages
+
+Halaman manajemen akun pribadi (Tergabung dalam *middleware* `auth`).
+
+* **Tampilan Edit Profil:** `/profile` (Melihat form untuk mengubah identitas).
+* **Pembaruan Data:** `/profile` dengan *method* PATCH (Menyimpan perubahan).
+* **Penghapusan Akun:** `/profile` dengan *method* DELETE (Menghapus akun secara permanen).
+* **Keamanan:** Verifikasi Email dan Pembaruan Password (Bawaan sistem Breeze).
+
+---
+
+### Payment Pages
+
+Infrastruktur pembayaran yang tersedia berdasarkan rute:
+
+* **Payment Gateway Webhook:** `/midtrans/callback` (Rute POST publik yang bertugas menerima dan memproses respons status pembayaran secara otomatis dari server Midtrans).
+
+---
+
+### Review Pages
+
+Sistem ulasan pasca-penyewaan:
+
+* **Pengiriman Ulasan:** `/booking/{booking_code}/review` (Rute POST di mana *customer* mengirimkan penilaian mereka untuk pesanan tertentu).
+
+---
+
+### Catatan Tambahan (Otomasi Latar Belakang)
+
+Meskipun bukan berupa halaman (URL), sistem ini memiliki alur operasional pelanggan yang berjalan di latar belakang (Cron Job `booking:monitor-all`) setiap menit:
+
+* **Pengingat H-30 Menit:** Mengirim WhatsApp ke pelanggan dan supir saat jadwal serah terima kendaraan akan segera dimulai.
+* **Eskalasi H+10 Menit:** Mengirim peringatan ke Admin jika pesanan sudah lewat 10 menit dari jadwal ambil namun status belum diubah menjadi *In Use*.
+* **Pengingat Pengembalian (H-2 Jam):** Mengirim WhatsApp ke pelanggan saat waktu sewa tersisa 2 jam.
+* **Pinalti Overtime:** Memeriksa keterlambatan lebih dari 30 menit, otomatis mengubah status pesanan menjadi `late`, dan mengirimkan total denda (Rp 50.000/jam) ke WhatsApp pelanggan.
+...
+
+# Audit Controllers
+Berikut adalah hasil audit teknis berdasarkan kode Controller, Console Command, dan Form Request yang Anda lampirkan:
+
+### Controller Map
+
+| Nama Controller | Modul Utama | Fungsi Utama yang Diimplementasikan |
+| --- | --- | --- |
+| **`HomeController`** | Katalog & Dasbor | Menampilkan katalog kendaraan dengan filter (*class*, *type*, tanggal), logika pengecekan mobil yang sedang disewa "hari ini", dan data statistik. |
+| **`BookingController`** | Transaksi Reservasi | Validasi *double-booking*, *endpoint* AJAX kalkulasi harga *real-time*, pembuatan *invoice*, integrasi Midtrans Snap Token, dan *submit* ulasan. |
+| **`MidtransController`** | Pembayaran (*Webhook*) | Menangkap *callback* Midtrans, memperbarui status pesanan (`paid`, `pending`, `cancelled`), dan memicu *Webhook* n8n khusus pesanan sukses. |
+| **`DriverController`** | Profil Supir | Menampilkan daftar supir beserta jumlah transaksi dan rata-rata *rating*. |
+| **`ProfileController`** | Manajemen Akun | Pembaruan data identitas operasional (KTP, SIM, NIK, No HP, Alamat) dan Avatar profil. |
+| **`GoogleController`** | Autentikasi SSO | *Login/Register* otomatis via Akun Google dan sinkronisasi Avatar Google. |
+| **`BookingMonitor`** | Otomasi Latar Belakang | *Cron job* untuk pengingat jadwal ambil (H-30m), eskalasi admin (H+10m), pengingat kembali (H-2 jam), dan pinalti *overtime*. |
+
+---
+
+### Business Flow
+
+#### 1. Customer Journey
+
+1. **Eksplorasi:** Pelanggan mengakses beranda/dasbor (`HomeController@index`) untuk melihat katalog. Fitur filter tanggal secara otomatis akan menyembunyikan mobil yang status jadwalnya beririsan (*overlap*).
+2. **Kalkulasi:** Di halaman form *booking*, pelanggan memilih jadwal, zona jemput/antar, supir (opsional), dan promo. Sistem menghitung secara otomatis via AJAX (`BookingController@calculatePrice`).
+3. **Pemesanan:** Data divalidasi dengan ketat di *backend*. Jika lolos, status awal menjadi `pending`.
+4. **Pembayaran:** Dialihkan ke halaman *Invoice* yang memuat Midtrans Snap Token untuk pembayaran mandiri.
+
+#### 2. Booking Workflow
+
+* **Proteksi Ganda (*Double-Booking*):** Sistem melakukan pengecekan ketersediaan jadwal tidak hanya pada `Vehicle` (Mobil), tetapi juga pada `Driver` (Supir) untuk memastikan tidak ada bentrok jadwal di tanggal yang sama.
+* **Otomasi Pengingat (via `BookingMonitor`):**
+* **H-30 Menit:** Mengirim *webhook* notifikasi persiapan ke pelanggan dan supir.
+* **H+10 Menit (Eskalasi):** Jika jadwal sudah lewat 10 menit tapi status belum diubah admin menjadi `in_use`, sistem mengirim peringatan ke Admin.
+* **H-2 Jam:** Mengirim pengingat waktu pengembalian.
+* **Overtime (Lewat 30 Menit):** Otomatis mengubah status *booking* menjadi `late`, menghitung estimasi denda otomatis (Rp 50.000 / Jam), dan menembak *webhook* pinalti.
+
+
+
+#### 3. Payment Workflow
+
+* Sistem menggunakan Midtrans Snap Token yang di-*generate* saat status pesanan masih `pending`.
+* Saat pelanggan membayar, `MidtransController@handleNotification` menerima *payload*.
+* Jika transaksi sukses (`capture/settlement`), status *booking* diubah menjadi `paid`.
+* **Proteksi Spam Webhook:** *Webhook* ke n8n (`booking_paid`) HANYA ditembakkan jika ada perubahan status dari *selain* `paid` menjadi `paid`.
+
+#### 4. Authentication Flow
+
+* **Role Routing:** Setelah *login* reguler, sistem mengecek *role*. Admin dilempar ke `/admin`, sedangkan Pelanggan ke `/dashboard`.
+* **Pendaftaran Reguler:** Modifikasi pada `RegisteredUserController` mewajibkan pengisian `phone_number` saat *register*.
+* **SSO Google:** Jika pelanggan masuk via Google dan *email* belum terdaftar, sistem akan membuatkan akun secara otomatis dengan *password* acak (*bypass* form *register*).
+
+#### 5. Review Workflow
+
+* Terletak di `BookingController@storeReview`.
+* **Prasyarat:** Hanya bisa diisi jika status pesanan sudah `completed`.
+* **Proteksi:** Terdapat pengecekan `exists()` agar pelanggan tidak bisa memberi ulasan lebih dari satu kali untuk satu kode *booking*.
+* **Penilaian Multi-Aspek:** Pelanggan memberikan 3 *rating* terpisah (Kendaraan, Perusahaan, dan Supir). *Rating* supir bersifat opsional (`nullable`).
+
+#### 6. Company Profile Features
+
+* Halaman Publik menampilkan daftar Supir aktif beserta rata-rata ulasannya (`DriverController`).
+* Data *Customer Service* (`/cs`) mengambil zona-zona yang secara spesifik ditandai sebagai `is_office = true`.
+
+---
+
+### README Notes
+
+**Hal yang wajib ditambahkan di README:**
+
+1. **Otomasi Pinalti & Denda:** Dokumentasikan bahwa sistem memiliki *Cron Job* (`booking:monitor-all`) yang akan otomatis mendeteksi keterlambatan (*Late*) dengan toleransi 30 menit, dan mengkalkulasi denda sebesar Rp 50.000/jam secara *real-time* via n8n.
+2. **Proteksi Double-Booking Supir:** Jelaskan bahwa selain mobil, jadwal supir juga dilindungi oleh *validation engine* saat pelanggan menekan tombol pesan.
+3. **SSO Google terintegrasi Avatar:** Sebutkan bahwa pelanggan yang mendaftar via Google tidak perlu mengunggah foto profil manual karena *avatar* Google mereka otomatis disinkronisasi.
+4. **Alur Eskalasi Admin:** Tambahkan catatan bahwa sistem n8n tidak hanya mengirim WA ke *customer*, tetapi juga mengirim "Eskalasi" ke nomor Admin jika mobil telat diserahkan (H+10 menit dari jadwal ambil).
+
+**Hal yang harus dihapus dari README lama:**
+
+1. **Klaim "Notifikasi WhatsApp otomatis":** Sistem/kode *backend* ini **tidak** mengirimkan WhatsApp secara langsung. Ubah bahasanya menjadi: *"Aplikasi memicu Webhook (HTTP POST) ke n8n berisi payload data transaksi yang komprehensif. Workflow n8n yang akan mengolahnya menjadi pesan WhatsApp."*
+2. **Klaim "Kalkulasi Otomatis di Panel Admin":** Semua kalkulasi pintar (Zona, Promo, Denda) saat ini murni berjalan di sisi *Customer Journey* (via Controller API/AJAX dan *Cron Job*). Admin panel tidak memiliki fitur kalkulasi otomatis pada form pembuatannya.
+...
+
+# Audit Views
+Berikut adalah hasil analisis *frontend* (antarmuka pelanggan) berdasarkan kode Blade yang Anda berikan:
+
+### Vehicle Catalog Features
+
+Katalog kendaraan dirancang untuk memberikan informasi sekilas yang padat dan interaktif bagi pelanggan.
+
+* **Visual Status Indikator:** Setiap kartu mobil dilengkapi *badge* status *real-time* (Tersedia hijau, Disewa biru, Perawatan merah).
+* **Informasi Inti:** Menampilkan gambar utama (*thumbnail*), Nama Mobil, Tipe (SUV/MPV/dll), Transmisi, dan Harga Sewa per hari.
+* **Dynamic CTA (Call To Action):** Tombol aksi menyesuaikan dengan ketersediaan mobil. Jika tersedia, tombol mengarahkan ke "Pesan Sekarang" dengan sorotan warna utama (*primary*). Jika tidak, tombol berubah menjadi "Lihat Detail" dengan warna netral.
+* **Navigasi Data:** Dilengkapi dengan fitur *Pagination* bawaan Laravel untuk mengelola daftar kendaraan yang panjang, serta penanganan *Empty State* ("Belum ada kendaraan di kategori ini").
+
+### Vehicle Detail Features
+
+Halaman detail memberikan spesifikasi komprehensif dan membangun kepercayaan pelanggan sebelum menyewa.
+
+* **Galeri Interaktif:** Menampilkan gambar utama yang dapat berubah secara dinamis saat pelanggan mengklik *thumbnail* gambar tambahan di bawahnya (menggunakan *Vanilla JavaScript*).
+* **Spesifikasi Detail:** Menjabarkan kapasitas spesifik kendaraan seperti jenis Transmisi, Kapasitas Kursi, Kapasitas Bagasi (Koper), dan Jenis Bahan Bakar.
+* **Status Ketersediaan Real-Time:** Menampilkan *badge* status dengan efek animasi *pulse* (berkedip) untuk mobil yang tersedia atau disewa.
+* **Sistem Ulasan (Review):** * Menampilkan rata-rata *rating* (bintang) dan total ulasan.
+* Menampilkan daftar ulasan individual lengkap dengan avatar pelanggan (*fallback* ke UI-Avatars jika tidak ada foto), waktu ulasan (`diffForHumans`), dan komentar.
+* Memiliki fitur *Toggle* "Lihat Semua Ulasan" untuk menyembunyikan/menampilkan ulasan jika jumlahnya lebih dari 3.
+
+
+* **Primary CTA:** Tombol "Sewa Sekarang" yang besar dan mencolok. Jika mobil sedang disewa/perawatan, tombol ini secara otomatis di-*disable* (tidak bisa diklik).
+
+### Customer Experience
+
+Pengalaman pelanggan didukung oleh transparansi informasi dan kemudahan akses bantuan operasional.
+
+* **Peta Lokasi Interaktif:** Halaman CS dilengkapi peta interaktif menggunakan **Leaflet.js** yang dibatasi (*locked bounds*) secara spesifik hanya untuk area Semarang. Peta ini menampilkan *marker* dinamis untuk setiap kantor cabang yang terdaftar.
+* **Pusat Bantuan Multi-Channel:** Akses instan (sekali klik) menuju WhatsApp CS, Telepon Darurat, dan Email Support.
+* **FAQ Interaktif:** Menggunakan **Alpine.js** (`x-data`, `x-show`, `x-collapse`) untuk membuat daftar pertanyaan umum (Syarat lepas kunci, denda, metode pembayaran) yang bisa di-Buka/Tutup (*accordion*).
+* **Transparansi Aturan (Legal):** Halaman Syarat & Ketentuan dan Kebijakan Privasi menjabarkan aturan secara eksplisit, seperti kewajiban KTP/SIM A, *Grace Period* 30 menit, denda keterlambatan Rp 50.000/jam, dan kebijakan *No Refund*.
+* **Company Profile:** Halaman *About* menampilkan profil Tim Pengembang (Kelompok 6) beserta dosen pengampu untuk membangun kredibilitas proyek.
+
+---
+
+### README Notes
+
+**Hal yang wajib ditambahkan di README:**
+
+1. **Integrasi Peta Interaktif (Leaflet.js):** Dokumentasikan bahwa halaman CS menggunakan Leaflet.js dengan fitur *bounding box* yang mengunci area peta secara spesifik di Kota Semarang, serta *auto-focus* pada *marker* cabang saat diklik.
+2. **Penggunaan Alpine.js:** Catat penggunaan framework ringan Alpine.js untuk menangani interaktivitas UI pada komponen *Accordion* FAQ di halaman CS.
+3. **UI-Avatars Fallback:** Sebutkan bahwa halaman detail kendaraan (pada bagian ulasan) dan profil tim otomatis menggunakan API UI-Avatars untuk men-*generate* foto profil berbasis inisial nama jika pengguna tidak mengunggah foto.
+
+**Hal yang harus dihapus/direvisi dari README lama:**
+
+1. **Klaim "Semua UI menggunakan Framework JS Berat":** Jika sebelumnya ada klaim menggunakan React/Vue untuk frontend publik, revisi bagian tersebut. *Frontend* publik ini murni dibangun menggunakan Blade Templating, Tailwind CSS, *Vanilla JavaScript* (untuk galeri/ulasan), dan Alpine.js (untuk FAQ/Peta).
+
+
+Berikut adalah hasil analisis untuk *frontend* modul Autentikasi berdasarkan kumpulan kode *view* (`guest-layout`) yang Anda kirimkan:
+
+### Authentication Flow Features
+
+Sistem autentikasi ini telah dimodifikasi dari *scaffolding* standar bawaan Laravel (seperti Breeze) untuk menyesuaikan dengan kebutuhan bisnis rental:
+
+* **Integrasi SSO Google (Single Sign-On):** Halaman *Login* dan *Register* menonjolkan tombol "Lanjutkan dengan Google" (`route('google.login')`) sebagai opsi utama di atas form konvensional. Ini mempercepat proses *onboarding* pelanggan baru.
+* **Kustomisasi Field Registrasi:** Form *Register* dimodifikasi dengan penambahan *field* wajib **Nomor WhatsApp** (`phone_number`). Hal ini sangat krusial untuk operasional rental, terutama untuk integrasi notifikasi n8n dan komunikasi darurat.
+* **Custom Error Handling:** Terdapat penanganan khusus untuk pesan *error* berbasis *session* (`session('error')`) pada halaman *Login* dengan UI *alert* khusus (kotak merah), yang biasanya digunakan untuk menangkap *error* dari *callback* SSO atau status akun yang ditangguhkan.
+* **Alur Keamanan Lengkap:** Menyiapkan seluruh *view* krusial termasuk Konfirmasi Password (untuk area aman), Lupa Password (*Forgot Password*), Reset Password, dan Verifikasi Email.
+
+### UI/UX & Customer Experience
+
+Desain antarmuka autentikasi dibuat konsisten dengan desain sistem utama (*Dashboard/Katalog*):
+
+* **Tipografi & Styling Konsisten:** Menggunakan perpaduan *font* `Montserrat` untuk *heading/button* dan `Inter` untuk teks reguler. *Styling* input menggunakan desain modern dengan sudut membulat (`rounded-xl`), efek transisi saat diklik (`active:scale-95`), dan sorotan *border* warna utama saat sedang diisi (`focus:ring-primary/20`).
+* **Visual Hierarchy yang Baik:** Pemisahan yang jelas antara opsi *Login* Google dan *Login* Email menggunakan garis pemisah ( *divider* ) "Atau dengan Email". Tombol SSO Google juga menggunakan SVG logo Google original untuk membangun kepercayaan visual.
+* **Bilingual Copywriting (Catatan):** Terdapat perpaduan bahasa. Halaman utama (Login & Register) sudah menggunakan *copywriting* bahasa Indonesia yang ramah ("Lanjutkan petualangan berkendara Anda"). Namun, halaman *edge-case* (seperti Verifikasi Email, Konfirmasi Password, Lupa Password) masih menggunakan pemanggilan translasi bawaan Laravel (`__('...')`) yang secara bawaan (*default*) merender teks bahasa Inggris.
+
+---
+
+### README Notes
+
+**Hal yang wajib ditambahkan di README:**
+
+1. **Otentikasi Multi-Jalur:** Dokumentasikan bahwa sistem mendukung dua jalur pendaftaran/masuk: Form Email konvensional dan Google OAuth 2.0 (SSO).
+2. **Kebutuhan Data Operasional:** Jelaskan bahwa pada alur registrasi konvensional, sistem secara spesifik mewajibkan input Nomor WhatsApp/Telepon untuk keperluan pengiriman notifikasi otomatis terkait pemesanan.
+
+**Rekomendasi Tambahan (Bukan untuk README, tapi untuk *Development*):**
+
+* Jika sistem aplikasi ini ditargetkan sepenuhnya untuk pengguna lokal (Indonesia), pertimbangkan untuk mengubah nilai `locale` pada `config/app.php` menjadi `id`, atau menerjemahkan *string* pada file bahasa Laravel untuk memastikan tampilan seperti *Reset Password* dan *Verify Email* tidak muncul dalam bahasa Inggris bagi pelanggan reguler.
+
+Berikut adalah hasil analisis *frontend* untuk alur penyewaan (Booking) berdasarkan kode Blade yang Anda lampirkan:
+
+### Booking Features
+
+* **Pemilihan Tanggal Cerdas (Flatpickr):** Menggunakan pustaka Flatpickr yang dikustomisasi dengan tampilan modal di tengah (*centered modal*). Flatpickr secara otomatis menonaktifkan tanggal yang sudah di-*booking* (`disable: disabledDates`) untuk mencegah *double-booking* secara visual di sisi *client*.
+* **Validasi Profil Lanjutan (Alpine.js):** Terdapat mekanisme pengecekan Nomor WhatsApp (`showPhoneModal`). Jika pelanggan belum mengisi nomor HP di profilnya, sistem akan menahan *submit* form dan memunculkan modal *pop-up* untuk melengkapinya secara *on-the-fly* (langsung di halaman yang sama).
+* **Pemilihan Supir Interaktif:** Menggunakan *modal* berbasis Alpine.js yang menampilkan daftar supir tersedia beserta foto, tarif harian, rata-rata *rating* ulasan, dan jumlah jam terbang (*booking count*). Opsi *default*-nya adalah "Lepas Kunci" (Tanpa Supir).
+* **Riwayat Responsif & Interaktif:** Halaman riwayat pesanan memiliki dua wajah: *Card layout* untuk *mobile* dan *Table layout* untuk *desktop*. Jika status pesanan sudah `completed`, sistem akan memunculkan tombol "Rate" yang memicu modal ulasan (Kendaraan, Supir, dan Perusahaan).
+
+### Pricing Engine
+
+* **Kalkulasi Real-Time (AJAX):** Setiap perubahan pada form (Tanggal, Zona, Supir, Promo) akan memicu fungsi `calculatePrice()` yang mengirim *request* AJAX ke *backend*. Jika berhasil, DOM akan diperbarui seketika tanpa *reload* halaman.
+* **Sistem Promo Cepat:** Pelanggan tidak hanya bisa mengetik kode promo, tetapi juga disediakan *Quick-select buttons* berupa daftar promo aktif (menampilkan kode, persentase diskon, dan batas maksimal diskon) yang bisa diklik untuk langsung diterapkan.
+* **Kalkulasi Pajak (PPN 11%):** Baik pada *live calculation* di form maupun pada halaman *Invoice*, sistem secara eksplisit menghitung PPN sebesar **11%**.
+* **Fail-Safe Mechanism:** Jika *response* AJAX mengembalikan status *error* (misal: jadwal tidak valid atau promo kedaluwarsa), tombol "Lanjut Pembayaran" (`btn-submit`) akan otomatis di-*disable* untuk mencegah transaksi *error* masuk ke *database*.
+
+### Business Rules
+
+* **Komponen Biaya Terpisah:** Total pembayaran dibentuk dari beberapa komponen independen: Biaya Sewa Mobil (Durasi x Harga Harian) + Jasa Supir (Durasi x Tarif Supir) + Biaya Zona Jemput + Biaya Zona Antar - Diskon Promo + PPN.
+* **Kalkulasi Diskon Proporsional:** Diskon promo dihitung dari "Subtotal" (Harga Sewa + Supir + Zona Jemput/Antar), dan Pajak dihitung setelah diskon diaplikasikan, memastikan pelanggan tidak membayar pajak untuk potongan diskon.
+* **Pembayaran Terkunci (Snap Midtrans):** Pada halaman *Invoice* (`booking.show`), tombol pembayaran menggunakan implementasi Midtrans Snap Pop-up (via `snap.pay()`). Tombol ini hanya aktif jika status pesanan adalah `pending`. Jika sudah dibayar/lunas, tombol dimatikan secara visual dan fungsional.
+
+---
+
+### README Notes
+
+**Hal yang wajib ditambahkan di README:**
+
+1. **Arsitektur Kalkulasi Harga AJAX:** Dokumentasikan bahwa form pemesanan tidak menggunakan kalkulasi manual di Javascript, melainkan menembak *endpoint* API Kalkulasi (`booking.calculatePrice`) untuk mencegah manipulasi harga di sisi klien (*Client-side tampering*).
+2. **Interaktivitas UI dengan Alpine.js:** Sebutkan penggunaan Alpine.js untuk mengelola *state* modal supir, modal kelengkapan profil (Nomor HP), modal ulasan, dan *toggle* visibilitas harga promo.
+3. **Flatpickr & Disable Dates:** Catat bahwa kalender pemesanan otomatis memblokir tanggal yang sudah terisi berdasarkan rentang waktu (*booked ranges*) yang dilempar dari *Controller*.
+4. **Integrasi Midtrans Snap:** Jelaskan bahwa proses pembayaran di halaman detail pesanan memanggil *script* Midtrans Snap Client secara langsung dengan `client_key` untuk memunculkan *pop-up* pembayaran tanpa harus berpindah halaman.
+
+Berikut adalah hasil analisis *frontend* untuk modul Mitra Pengemudi (Driver) dan Pengaturan Profil berdasarkan kode yang Anda berikan:
+
+### UI/UX & Features
+
+* **Katalog Pengemudi Informatif:** Halaman daftar supir menggunakan *grid system* yang responsif. Setiap kartu supir dirancang untuk memaksimalkan *trust* dengan menampilkan foto, lencana verifikasi, rata-rata rating (bintang), jumlah pengalaman (jam terbang), serta tarif harian yang transparan.
+* **Indikator Status Real-Time:** Menampilkan *badge* status operasional supir secara visual: "Tersedia" (Hijau berkedip), "Sedang Bertugas" (Biru berkedip), dan "Tidak Aktif" (Merah).
+* **Sistem Ulasan Interaktif:** Halaman profil supir menampilkan detail ulasan pelanggan sebelumnya. Terdapat fungsionalitas Javascript khusus (`toggleReviews()`) untuk menyembunyikan ulasan ekstra jika jumlahnya lebih dari 3, menjaga halaman tetap rapi dengan opsi "Lihat Semua Ulasan".
+* **Manajemen Profil Berbasis Tab (SPA-feel):** Halaman pengaturan profil menggunakan Alpine.js (`x-data="{ activeTab: ... }"`) untuk membuat navigasi tab (Profil, Keamanan, Hapus Akun) secara instan tanpa perlu memuat ulang (*reload*) halaman. Sistem juga cerdas membaca *error bag* dari Laravel; jika ada *error* saat mengubah *password* atau menghapus akun, tab yang relevan akan otomatis terbuka.
+* **Live Image Preview:** Fitur unggah foto profil dilengkapi dengan fungsi Javascript pembaca file (`FileReader`), memungkinkan pengguna melihat pratinjau (*preview*) foto secara langsung sebelum menekan tombol simpan.
+
+### Business Rules & Data Handling
+
+* **Pemberkasan Digital (KYC):** Modul profil dirancang khusus untuk memfasilitasi syarat penyewaan mobil. Terdapat input krusial seperti **NIK (16 digit)**, **Nomor WhatsApp**, serta unggahan dokumen fisik **KTP** dan **SIM A**.
+* **Indikator Dokumen Valid:** Jika *user* sudah pernah mengunggah KTP atau SIM, sistem akan menampilkan *badge* hijau "KTP/SIM Tersimpan", mencegah pengguna mengunggah ulang dokumen secara tidak perlu kecuali mereka ingin memperbaruinya.
+* **Keamanan Penghapusan Akun (Fail-Safe):** Menghapus akun tidak bisa dilakukan hanya dengan satu klik. Sistem membungkusnya dalam *modal pop-up* peringatan (via Alpine.js) dan mewajibkan *user* mengetikkan *password* saat ini (`current_password`) untuk mencegah penghapusan akun yang tidak disengaja atau tidak sah.
+
+---
+
+### README Notes
+
+**Hal yang wajib ditambahkan di README:**
+
+1. **State Management (Alpine.js):** Dokumentasikan bahwa antarmuka Pengaturan Profil sangat bergantung pada Alpine.js untuk *tab switching* dan manajemen *modal* (penghapusan akun).
+2. **Manajemen File & Storage:** Mengingat sistem menangani *upload* KTP, SIM, dan Foto Profil (`enctype="multipart/form-data"`), pastikan menginstruksikan *developer* lain untuk menjalankan perintah `php artisan storage:link` agar gambar dapat dirender dengan benar di sisi *client*.
+3. **UI Feedback:** Jelaskan adanya mekanisme notifikasi *flash session* yang dibungkus oleh Alpine.js (`x-init="setTimeout(() => show = false, 2500)"`) untuk memberikan *feedback* visual sementara ("Profil Berhasil Diperbarui") yang akan menghilang otomatis dalam waktu 2,5 detik.
+
+Berikut adalah hasil analisis *frontend* untuk struktur *Layout* Utama (`app`), *Layout Guest* (Autentikasi), dan Navigasi berdasarkan kode yang Anda berikan:
+
+### UI/UX & Design System
+
+* **Dukungan Dark Mode Native:** Sistem telah dilengkapi dengan fitur peralihan tema Terang/Gelap (Light/Dark Mode). Skrip pada bagian `<head>` mengecek preferensi OS (`prefers-color-scheme`) atau pilihan terakhir yang disimpan di `localStorage` untuk mencegah *Flash of Unstyled Content* (FOUC) saat halaman dimuat.
+* **Navigasi Adaptif (Mobile-First):** Terdapat dua pendekatan navigasi yang berbeda. Pada perangkat Desktop (Layar besar), pengguna menggunakan *Top Navigation Bar* tradisional. Namun, pada perangkat Mobile, menu utama dipindah ke *Bottom Navigation Bar* (menempel di bawah layar) yang meniru pengalaman menggunakan aplikasi *native* (seperti aplikasi Gojek/Grab).
+* **Estetika Modern (Glassmorphism):** Penggunaan efek *blur* (`backdrop-blur-xl`) pada *navbar* saat di-*scroll*, dipadukan dengan desain kartu bersudut membulat dan *shadow* kustom (`.premium-shadow`) menciptakan tampilan aplikasi yang premium dan kekinian.
+* **Tipografi & Ikonografi Standar Industri:** Memadukan *font* `Montserrat` untuk tajuk yang tegas dan `Inter` untuk teks bacaan yang tingkat keterbacaannya tinggi. Sistem ikon sepenuhnya menggunakan *Material Symbols Outlined* dari Google.
+
+### Technical Architecture
+
+* **Tailwind via CDN dengan Injeksi Variabel CSS:** Proyek ini tidak bergantung sepenuhnya pada *build-step* Node.js untuk *styling*, melainkan menggunakan Tailwind CSS versi CDN. Konfigurasi tema Tailwind (`tailwind.config`) disuntikkan secara dinamis untuk membaca Variabel CSS murni (`var(--color-primary)`), sehingga perubahan *Dark Mode* bisa terjadi secara instan murni menggunakan CSS, tanpa membebani performa Javascript.
+* **State Management Ringan (Alpine.js):** Alpine.js dimanfaatkan secara efisien pada *navbar* untuk tiga tugas utama:
+1. Mendeteksi *scroll* (`@scroll.window="scrolled = ..."`) untuk memendekkan ukuran *navbar* dan menambah efek bayangan.
+2. Mengelola fungsi tombol *toggle* tema Terang/Gelap (`toggleTheme()`).
+3. Mengontrol logika *buka/tutup* dan animasi *dropdown* profil pengguna.
+
+
+* **DRY (Don't Repeat Yourself) Pattern:** File navigasi (`navigation.blade.php`) cerdas membaca status autentikasi (`@auth`). Menu seperti "Riwayat Pesanan" dan tombol profil secara otomatis disembunyikan bagi pengunjung (*guest*), digantikan dengan tombol *Login/Register*.
+
+---
+
+### README Notes
+
+**Hal yang wajib ditambahkan di README:**
+
+1. **Pengelolaan Tema (Tailwind CSS Variables):** Dokumentasikan bahwa palet warna aplikasi ini tidak di-*hardcode* di dalam `tailwind.config.js`. Jika *developer* ingin mengubah warna *primary* atau warna khusus *Dark Mode*, mereka harus mengubah nilai pada blok `:root` dan `.dark` di bagian `<style>` pada *layout* master, bukan di konfigurasi Tailwind.
+2. **Perilaku Navigasi Mobile:** Catat bahwa menu navigasi untuk tampilan *mobile* dikontrol sepenuhnya oleh *Bottom Navigation Bar*. Menambahkan menu baru wajib dilakukan di dua tempat: pada *Top Navbar* (kelas `hidden lg:flex`) dan *Bottom Navbar* (kelas `lg:hidden`).
+3. **Ketergantungan CDN:** Beri keterangan bahwa *layout* ini memerlukan koneksi internet aktif saat pengembangan lokal karena memuat Tailwind, Fonts, dan Icons langsung dari *Content Delivery Network* (CDN).
+
+Berikut adalah hasil analisis *frontend* untuk halaman **Dashboard (Beranda Utama)** berdasarkan kode yang Anda berikan:
+
+### UI/UX & Features
+
+* **Pencarian Pintar Terapung (Floating Search Bar):** Formulir pencarian diletakkan dengan teknik *overlapping* (margin negatif `-mt-6`) di antara *hero section* dan daftar konten utama. Formulir ini mendukung filter spesifik seperti Lokasi Penjemputan, Tanggal Ambil/Kembali, dan Kelas Kendaraan, lengkap dengan tombol "Reset" (Tutup) yang muncul dinamis jika filter sedang aktif.
+* **Katalog Armada Berjenjang:** Kendaraan dikelompokkan secara visual berdasarkan kelasnya (VIP, Premium, Standard) menggunakan ikon yang berbeda (Diamond, Star, Car). Terdapat batasan visual `.take(4)` di beranda agar halaman tidak terlalu panjang, disematkan dengan tautan "Lihat Semua" untuk eksplorasi lebih lanjut.
+* **Indikator Status Cerdas:** Kartu mobil dilengkapi *badge* status dengan indikator visual *pulsing* (berkedip) untuk menarik perhatian. Logika warnanya disesuaikan: "Disewa hari ini/Rented" (merah/biru), "Perawatan" (merah statis), dan "Tersedia" (hijau).
+* **Testimoni Marquee Berjalan:** Memanfaatkan animasi CSS murni (`@keyframes marquee`) untuk membuat deretan ulasan pelanggan yang bergerak melintas secara horizontal. Kecepatannya diatur (35 detik) dan akan berhenti seketika saat kursor diarahkan ke atasnya (`hover`), sehingga pengunjung dapat membaca dengan nyaman.
+* **Modal Detail Ulasan Interaktif:** Alih-alih mengarahkan pengguna ke halaman baru, sistem menggunakan **Alpine.js** untuk menangkap data ulasan (Nama, Rating, Komentar, Avatar) saat kartu diklik, lalu menampilkannya dalam *modal pop-up* yang dilengkapi efek transisi halus.
+
+### Business Rules & Data Handling
+
+* **Penanganan Avatar Berlapis (Smart Fallback):** Sistem memiliki logika penanganan gambar profil yang sangat kokoh pada blok ulasan. Kode memeriksa secara berurutan: fungsi bawaan *model* (`display_picture`), URL langsung, atau path *storage*. Jika semuanya gagal (atau kosong), antarmuka akan otomatis menghasilkan avatar inisial (huruf pertama nama pengguna).
+* **Fleksibilitas Rute Form:** Form pencarian menggunakan `action="{{ url()->current() }}"` dan metode `GET`. Ini praktik yang sangat baik karena URL dapat disalin dan dibagikan (*shareable links*) dengan kondisi filter yang tetap dipertahankan.
+* **Penanganan Tampilan Kosong (Empty State):** Jika hasil filter tidak menemukan kendaraan yang cocok, antarmuka tidak akan rusak atau kosong melompong. Sistem akan menampilkan blok pesan *error* berdesain ramah (ikon mobil tabrakan) dan menyertakan tombol cepat untuk menghapus filter.
+
+---
+
+### README Notes
+
+**Hal yang wajib ditambahkan di README untuk halaman Dashboard:**
+
+1. **Variabel Statistik Dinamis:** Beri catatan kepada *Backend Developer* bahwa halaman ini membutuhkan injeksi variabel statistik dari *Controller* (`$totalVehicles`, `$totalBookings`, `$totalCustomers`). Jika variabel ini tidak dikirim, halaman akan memberikan nilai bawaan `0`.
+2. **Ketergantungan Storage & Image Placeholder:** Karena sistem menampilkan gambar mobil dan avatar pelanggan melalui `Storage::url()`, pastikan tim pengembang menjalankan `php artisan storage:link`. Sistem juga menggunakan `placehold.co` sebagai *fallback* jika gambar utama tidak ditemukan.
+3. **Data Dummy Testimoni:** Dokumentasikan bahwa blok "Apa Kata Mereka?" memiliki data *dummy* cadangan (Budi, Siti, Andi) jika *database* (variabel `$reviews`) belum memiliki data ulasan yang ditarik, guna menjaga struktur UI tetap rapi saat masa pengembangan awal.
+...
+
+# Audit N8N 
+Berikut adalah hasil analisis *workflow* otomatisasi **n8n** untuk sistem notifikasi WhatsApp (KlikRental) berdasarkan konfigurasi JSON yang Anda berikan:
+
+### Arsitektur Otomatisasi Notifikasi (Event-Driven)
+
+*Workflow* ini dirancang menggunakan pola *Event-Driven Architecture*. Semua notifikasi dipicu oleh satu *endpoint* Webhook (`POST /booking-paid`), dan n8n bertugas sebagai *router* utama yang mendistribusikan pesan berdasarkan tipe *event* (`{{ $json.body.event }}`).
+
+Sistem ini terintegrasi langsung dengan WhatsApp menggunakan *node* **WAHA (WhatsApp HTTP API)**.
+
+#### Diagram Alir Otomatisasi (ASCII)
+
+```text
+[Webhook: POST /booking-paid]
+      │
+      ▼
+[Switch: Pengecekan Tipe Event]
+ ├──> 1️⃣ booking_paid ──────────────> (Wait) ─┬─> WA: Admin (Info Pesanan Baru)
+ │                                            ├─> WA: Customer (Bukti Bayar Berhasil)
+ │                                            └─> [Cek Driver] ──(Ya)──> WA: Driver (Jadwal Tugas)
+ │
+ ├──> 2️⃣ booking_reminder_2_hours ──> [Cek Driver] ─┬─> (Ya) ──> WA: Driver (Pengingat Sisa 2 Jam)
+ │                                                  └─> (Tidak) ──> WA: Customer (Pengingat 2 Jam)
+ │
+ ├──> 3️⃣ booking_late ──────────────> (Wait) ─┬─> WA: Admin (Alert Overtime)
+ │                                            └─> [Cek Driver] ─┬─> (Ya) ──> WA: Driver (Info Overtime)
+ │                                                              └─> (Tidak) ──> WA: Customer (Info Denda)
+ │
+ ├──> 4️⃣ booking_pickup_reminder ───> (Wait) ──> [Cek Driver] ─┬─> (Ya) ──> WA: Driver (Siap 30 Menit)
+ │                                                              └─> (Tidak) ──> WA: Customer (Jadwal 30 Menit)
+ │
+ └──> 5️⃣ booking_pickup_escalation ─> WA: Admin (Eskalasi: 10 Menit Telat Serah Terima)
+
+```
+
+---
+
+### Analisis Logika & Flow
+
+Terdapat 5 *flow* utama yang ditangani oleh *workflow* ini dengan tingkat *routing* yang sangat spesifik dan efisien:
+
+* **Flow 1 (Booking Paid):** Saat pembayaran lunas, sistem secara paralel mengirim pesan ke Pelanggan dan Admin. Terdapat logika bersyarat (`Switch` node) yang mengecek variabel `has_driver`. Jika pelanggan menyewa beserta supir, *node* akan mencabangkan satu pesan tambahan khusus untuk Driver.
+* **Flow 2 & 4 (Pengingat Jadwal):** Flow ini menangani *reminder* (30 menit sebelum mulai dan 2 jam sebelum selesai). Logikanya sangat cerdas: jika *order* menggunakan supir (`has_driver: true`), pesan peringatan dikirim ke **Supir** agar bersiap. Jika lepas kunci (`has_driver: false`), pesan langsung ditargetkan ke **Pelanggan**.
+* **Flow 3 (Keterlambatan/Overtime):** Ketika durasi sewa habis, Admin adalah pihak pertama yang langsung mendapat notifikasi berserta estimasi denda (`current_late_fee`). Paralel dengan itu, sistem menegur Pelanggan (jika lepas kunci) atau Supir (agar mengonfirmasi status).
+* **Flow 5 (Eskalasi Serah Terima):** Jika pelanggan/supir telat melakukan serah terima lebih dari 10 menit dari waktu *start*, notifikasi merah (Eskalasi) langsung ditembakkan ke Admin untuk ditindaklanjuti secara manual agar sistem tidak terblokir.
+
+---
+
+### Teknik & Format Data (Best Practices)
+
+1. **Format Nomor Telepon Dinamis (Regex):**
+Di dalam *node* WAHA, Anda menggunakan *expression* yang sangat solid untuk menangani berbagai macam input nomor telepon Indonesia (misal: `0812...`, `62812...`, atau `+62812...`):
+`{{ $json.body.customer_phone.toString().replace(/\D/g, '').replace(/^0/, '62') + '@c.us' }}`
+*Script* ini secara otomatis membuang karakter non-angka (seperti spasi atau tanda plus), lalu mengganti angka `0` di depan menjadi `62`, dan mengakhirinya dengan format Wha WhatsApp `@c.us`. Ini mencegah pesan gagal terkirim (Bounced).
+2. **Templating Pesan Kondisional:**
+Pada notifikasi Admin dan Customer, Anda menggunakan *inline ternary operator* untuk merender teks secara dinamis tanpa perlu membuat *node* terpisah.
+Contoh: `{{ $json.body.has_driver ? 'Pakai Supir (' + $json.body.driver_name + ')' : 'Lepas Kunci (Tanpa Supir)' }}`. Ini membuat *workflow* tetap ringkas dan tidak memakan memori n8n.
+3. **Penggunaan "Wait" Node (Rate Limiting Control):**
+Terdapat beberapa *node* `Wait` sebelum proses *broadcast* ke banyak pihak sekaligus (seperti pada Flow 1). Meskipun durasinya diset minimal (`amount: 1`), ini adalah praktik yang bagus untuk mencegah antrean API WhatsApp (WAHA) membludak di waktu yang sama, sehingga mengurangi risiko akun terdeteksi sebagai *spam/bot* berlebihan.
+
+---
+
+### Infrastructure Notes (Catatan Tambahan)
+
+* **Keamanan Webhook:** Saat ini *endpoint* Webhook n8n (`POST /booking-paid`) tampaknya tidak memiliki validasi otentikasi (seperti *Header Authorization* atau *HMAC Signature*). Pastikan *endpoint* Laravel/Backend yang menembak Webhook ini dirahasiakan, atau tambahkan *node* "IF" setelah Webhook di n8n untuk mengecek kecocokan *Secret Token*.
+* **Handling Variable `driver_phone` Kosong:** Pada beberapa teks (seperti Eskalasi Admin), Anda sudah mengantisipasi pembacaan nilai *null* dengan baik menggunakan validasi kondisional lanjutan: `($json.body.driver_phone ? ... : '')`. Pastikan tipe data *boolean* `has_driver` selalu divalidasi ketat di sisi *backend* Laravel sebelum dikirim ke n8n.
+
+### ci/cd 
+
+Konfigurasi *deployment* Anda sudah tersusun dengan sangat rapi dan modern. Pemisahan antara *development* yang berfokus pada kecepatan iterasi (HMR) dan *production* yang berbasis *immutable image* (GHCR) menunjukkan pemahaman *DevOps* yang solid.
+
+Berikut adalah analisis mendalam dari arsitektur dan alur *deployment* proyek KlikRental.
+
+### Container Architecture & CI/CD Flow
+
+```text
+[ Developer ]
+      │ (git push)
+      ▼
+[ GitHub Repository (main) ]
+      │ (Triggers)
+      ▼
+[ GitHub Actions ] ──(1. Build Docker Image)──> [ GHCR (ghcr.io/.../klikrental:latest) ]
+      │
+      │ (2. POST Webhook)
+      ▼
+[ n8n Automation ] ──(3. Pull & Restart)──> [ Production Server / CasaOS ]
+
+```
+
+---
+
+### 1. Development Environment
+
+Lingkungan lokal dirancang khusus untuk kenyamanan *coding* dengan pembaruan instan (*hot-reloading*).
+
+* **Live Sync:** Menggunakan *bind mount* (`.:/var/www`) pada `docker-compose.yml` (dev), sehingga setiap perubahan kode PHP langsung terdeteksi tanpa perlu *build* ulang *container*.
+* **Vite HMR:** Mengekspos port `5173` memungkinkan *Hot Module Replacement* untuk aset *frontend* berjalan mulus di *browser* lokal.
+* **Database Aksesibel:** Port MySQL `3306` diekspos ke *host* agar database mudah diakses dan dikelola menggunakan *tools* GUI seperti DBeaver atau HeidiSQL.
+* **Image Build:** Melakukan *build* dari Dockerfile lokal yang sama, memastikan konsistensi *environment* antara dev dan prod (Apache + PHP 8.4).
+
+### 2. Production Environment
+
+Fokus utama di sini adalah stabilitas, keamanan, dan *persistency*.
+
+* **Immutable Image:** Tidak ada *build* kode secara lokal. *Service* aplikasi menarik *image* yang sudah dikompilasi secara final dari GitHub Container Registry (GHCR).
+* **Storage Persistency:** Memisahkan *state* dari *container*. Volume `./storage` di-*mount* ke `/var/www/storage` untuk memastikan data unggahan (seperti KTP/SIM) dan log tidak hilang saat *container* diperbarui. Berkas `.env` juga disuntikkan secara dinamis dari luar.
+* **CasaOS Integration:** Kehadiran metadata `x-casaos` menunjukkan arsitektur ini sangat optimal untuk diorkestrasi di *home lab* atau *server cluster* ringan, mengintegrasikan *container* langsung dengan antarmuka manajemen visual.
+* **Database Management:** Menambahkan *Adminer* (port 4053) mempermudah inspeksi data di *production*.
+
+### 3. Deployment Flow (CI/CD)
+
+Proses pembaruan ke *server* berjalan sepenuhnya otomatis tanpa intervensi manual (Zero-Touch Deployment).
+
+1. **Commit & Push:** Setiap perubahan yang di-*push* ke *branch* `main` memicu GitHub Actions.
+2. **Build & Publish:** Runner GitHub akan melakukan *checkout* kode, melakukan proses kompilasi via Docker Buildx (menjalankan instalasi Composer & NPM), lalu mendorong (*push*) *image* final ke GHCR dengan *tag* `:latest`.
+3. **Webhook Trigger:** Setelah *image* siap, GitHub Actions menembak *endpoint* Webhook n8n.
+4. **Automated Rollout:** *Workflow* n8n di sisi *server* akan merespons webhook dengan menarik (*pull*) *image* terbaru dari GHCR dan me-*restart container* `app`.
+
+### 4. Infrastructure Notes
+
+Beberapa catatan teknis dan potensi perbaikan untuk infrastruktur Anda:
+
+* **Permissions Handling (Smart CMD):** Perintah `CMD` pada Dockerfile sangat cerdas. Melakukan `chown` dan `chmod` saat *startup* memastikan masalah permission *storage* yang sering terjadi di Laravel teratasi otomatis, terlepas dari *host environment*-nya. Menjalankan *caching* (`config:cache`, `route:cache`) saat *startup* juga memastikan aplikasi langsung optimal begitu menyala.
+* **Security Flag (Adminer):** *Service* Adminer terbuka di port `4053` secara publik di *production*. Ini memiliki risiko keamanan (brute-force). Disarankan untuk menutup port eksternal ini dan mengaksesnya via Reverse Proxy (seperti Nginx Proxy Manager/Cloudflare Tunnels) dengan lapisan autentikasi tambahan, atau hanya menyalakannya saat dibutuhkan.
+* **Composer Flag:** Penggunaan `ENV COMPOSER_MEMORY_LIMIT=-1` dan `--no-dev --optimize-autoloader` sudah sangat tepat untuk mengamankan dan mengoptimalkan ukuran *image production*.
+
+### 5. README Notes
+
+Saat menulis dokumentasi repositori (README), fokuskan pada hal krusial berikut agar *developer* lain mudah melakukan *setup*:
+
+* **Prerequisites:** Wajibkan instalasi Docker dan Docker Compose.
+* **Dev Setup Command:** Instruksikan menjalankan `cp .env.example .env` lalu `docker-compose up -d --build`.
+* **Storage Link Check:** Beri peringatan bahwa direktori `/storage` di *host machine* akan terpengaruh oleh perintah `chown` dari dalam *container*, dan pengguna Windows/WSL mungkin perlu memperhatikan izin *file* ini.
+* **Port Mapping:** Cantumkan daftar port eksplisit: `4050` (Web), `5173` (Vite HMR), dan `3306` (MySQL).
+
+Berikut adalah hasil analisis *workflow* n8n untuk proses **Auto Update (Deployment)** aplikasi KlikRental. *Workflow* ini bertindak sebagai penerima (ujung tombak) dari *webhook* yang dikirimkan oleh GitHub Actions setelah proses *build image* selesai.
+
+### Arsitektur Alur Kerja (Deployment Pipeline)
+
+```text
+[GitHub Actions]
+      │ (POST Webhook)
+      ▼
+[Webhook Node: 78d8a4dc...]
+      │
+      ▼
+[SSH Node: Eksekusi Server] ──> Menjalankan perintah Docker via tmux (Detached)
+      │
+      ▼
+[Wait Node: Jeda Waktu] ──────> Memberi waktu server untuk pull & restart container (1 Menit)
+      │
+      ├───────────────────────┐
+      ▼                       ▼
+[Telegram Alert]        [WhatsApp (WAHA) Alert]
+(Notifikasi Admin)      (Notifikasi Grup Tim)
+
+```
+
+---
+
+### Analisis Alur & Logika Eksekusi
+
+1. **Pemicu (Webhook):**
+Sistem mendengarkan *request* masuk dengan metode POST pada *path* spesifik (`78d8a4dc...`). Ini memastikan hanya entitas yang mengetahui URL unik ini (seperti GitHub Secrets Anda) yang bisa memicu *deployment*.
+2. **Eksekusi Jarak Jauh (SSH + Tmux):**
+Anda menggunakan perintah yang sangat strategis: `tmux new-session -d -s deploy_klikrental "cd /DATA/AppData/KlikRental/ && docker compose pull && docker compose down && docker compose up -d"`.
+* **Penggunaan Tmux:** Menjalankan proses di *background* (*detached session*) adalah praktik yang sangat cerdas. Terkadang proses `docker compose pull` memakan waktu lama tergantung ukuran *image*. Jika dieksekusi langsung tanpa `tmux`, koneksi SSH dari n8n bisa mengalami *timeout* (terputus) sebelum proses selesai.
+
+
+3. **Jeda Eksekusi (Wait Node):**
+Sistem menunggu sekitar 1 menit sebelum melanjutkan proses. Ini adalah kompensasi logis karena eksekusi SSH diserahkan ke `tmux` (yang mana n8n akan menganggap proses SSH selesai seketika). Jeda ini memberi waktu bagi server untuk benar-benar mematikan dan menghidupkan kembali *container*.
+4. **Multi-Channel Broadcasting:**
+Setelah jeda selesai, sistem memparalelkan pengiriman notifikasi pembaruan ke Telegram (pesan ke Chat ID tertentu) dan WhatsApp (pesan ke Grup WA) lengkap dengan tautan produksi (`https://klikrental.widihhh.my.id/`).
+
+---
+
+### Catatan Infrastruktur & Praktik Terbaik
+
+* **Optimalisasi Downtime Docker:**
+Perintah `docker compose down && docker compose up -d` akan mematikan aplikasi sepenuhnya selama beberapa detik (atau menit) sampai *image* baru selesai ditarik dan dijalankan.
+Untuk mencapai status yang lebih mendekati *Zero-Downtime*, Anda bisa merampingkan perintahnya menjadi:
+`docker compose pull && docker compose up -d`
+Docker Compose secara otomatis mendeteksi perubahan *image* dan hanya akan me-*recreate container* yang terpengaruh, sehingga waktu aplikasi mati akan jauh lebih singkat dibandingkan menggunakan `down` terlebih dahulu.
+* **Validasi Keberhasilan (Error Handling):**
+Saat ini, karena menggunakan `tmux`, n8n tidak mengetahui apakah proses `docker compose pull` atau `up` benar-benar berhasil atau mengalami *error* di tengah jalan. Notifikasi Telegram/WA akan selalu terkirim setelah 1 menit terlepas dari apakah *server* berhasil hidup atau gagal. Jika infrastruktur Anda berkembang, Anda bisa menambahkan *node* HTTP Request sebelum mengirim notifikasi untuk melakukan *ping* ke URL KlikRental (mengecek status HTTP 200) sebagai konfirmasi valid bahwa aplikasi benar-benar menyala.
+
+Apakah Anda ingin mengeksplorasi cara menambahkan *node* pengecekan status HTTP (Health Check) agar notifikasi yang terkirim benar-benar akurat berdasarkan kondisi *server* nyata?

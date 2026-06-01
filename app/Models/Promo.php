@@ -14,6 +14,5 @@ class Promo extends Model
         'discount_percentage',
         'max_discount',
         'valid_until',
-        'is_active',
     ];
 }

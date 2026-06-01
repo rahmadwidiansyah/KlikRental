@@ -47,21 +47,27 @@ class HomeController extends Controller
             $query->whereNotIn('id', $bookedVehicleIds);
         }
 
-        $allVehicles = $query->with('primaryImage')->get();
-
         // 6. LAPIS 2: Jika user HANYA MELIHAT KATALOG (Tanpa Filter Tanggal), beri tanda disewa HARI INI
         if (!$request->filled('start_date')) {
             $todayMinus2Days = now()->subDays(2)->startOfDay();
 
-            $todayBookedIds = Booking::whereNotIn('status', ['cancelled'])
+            $todayBookedIds = Booking::whereNotIn('status', ['cancelled', 'returned'])
                 ->where('start_date', '<=', now()->endOfDay())
                 ->where('end_date', '>=', $todayMinus2Days)
                 ->pluck('vehicle_id')
                 ->toArray();
-
+            
+            $allVehicles = $query->with('primaryImage')->get();
             foreach ($allVehicles as $car) {
                 $car->is_booked_today = in_array($car->id, $todayBookedIds);
             }
+
+            $maintenanceVehicleIds = Vehicle::where('status', 'maintenance')->pluck('id')->toArray();
+            foreach ($allVehicles as $car) {
+                $car->is_maintenance = in_array($car->id, $maintenanceVehicleIds);
+            }
+        } else {
+            $allVehicles = $query->with('primaryImage')->get();
         }
 
         // 7. Kelompokkan kendaraan berdasarkan kolom 'class'
@@ -76,8 +82,8 @@ class HomeController extends Controller
         // 9. Data Statistik untuk Section Keunggulan Layanan
         $totalVehicles = Vehicle::count();
         $totalBookings = Booking::whereNotIn('status', ['cancelled', 'pending'])->count(); 
-        $totalCustomers = Booking::distinct('user_id')->count(); 
-        $allVehicles = $query->with('primaryImage')->get();
+        $totalCustomers = Booking::distinct()->count('user_id'); 
+
         return view('dashboard', compact('groupedVehicles', 'zones', 'reviews', 'totalVehicles', 'totalBookings', 'totalCustomers'));
     }
 

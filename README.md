@@ -1,5 +1,13 @@
 # KlikRental
 
+![PHP Version](https://img.shields.io/badge/php-8.4-777bb3?style=flat-square&logo=php)
+![Laravel Version](https://img.shields.io/badge/laravel-13.x-ff2d20?style=flat-square&logo=laravel)
+![Filament Version](https://img.shields.io/badge/filament-v4-fbbf24?style=flat-square&logo=laravel)
+![TailwindCSS](https://img.shields.io/badge/tailwind-3.4-38bdf8?style=flat-square&logo=tailwind-css)
+![Database](https://img.shields.io/badge/mysql-8.0-4479a1?style=flat-square&logo=mysql)
+![Status](https://img.shields.io/badge/status-active-success?style=flat-square)
+![Localization](https://img.shields.io/badge/lang-id-blue?style=flat-square)
+
 ## Overview
 
 **KlikRental** adalah platform manajemen penyewaan kendaraan berbasis web berskala enterprise yang dirancang untuk mendigitalisasi dan mengotomatisasi operasional UMKM rental kendaraan. Sistem ini memfasilitasi pemesanan pelanggan, alokasi inventaris, kalkulasi harga dinamis, verifikasi pembayaran digital, hingga manajemen siklus hidup penyewaan dari awal hingga pengembalian.
@@ -20,6 +28,7 @@ Ruang lingkup sistem berfokus pada efisiensi manajerial *back-office* dan pengal
 ### Booking Features
 
 * **Double-Booking Protection:** Mesin validasi *backend* tingkat lanjut yang mengunci ketersediaan armada dan jadwal supir secara spesifik pada rentang tanggal transaksi.
+* **Automated Inventory Sync:** Admin tidak perlu mengubah status Mobil/Supir secara manual saat mobil keluar/masuk. Sistem secara otomatis memperbarui status inventaris berdasarkan perubahan status *Booking* menggunakan fitur Eloquent `booted()`.
 * **Review Submission:** Penilaian pasca-penyewaan multi-aspek (Kondisi Kendaraan, Pelayanan Perusahaan, dan Kinerja Supir).
 
 ### Payment Features
@@ -29,17 +38,17 @@ Ruang lingkup sistem berfokus pada efisiensi manajerial *back-office* dan pengal
 
 ### Authentication Features
 
-* **Google OAuth (SSO):** Pendaftaran akun dan akses login instan yang terhubung langsung dengan integrasi *avatar* profil pengguna.
+* **Google OAuth (SSO):** Pendaftaran akun dan akses login instan yang terhubung langsung dengan integrasi *avatar* profil pengguna. (Saran: Sebutkan bahwa pelanggan yang mendaftar via Google tidak perlu mengunggah foto profil manual karena *avatar* Google mereka otomatis disinkronisasi.)
 * **Role Management:** Sistem *role-based access control* yang membedakan rute fungsional antara `admin` dan `customer`.
-
+* **Identity Collection (KYC):** Mendukung pengumpulan data identitas operasional seperti NIK, Nomor WhatsApp, KTP, dan SIM.
 ### Notification Features
 
 * **Event-Driven Messaging:** Infrastruktur pengiriman *webhook* asinkron untuk mentransmisikan status siklus pesanan kepada *Customer*, *Driver*, dan *Admin* melalui WhatsApp (via n8n).
 
 ## Tech Stack
 
-* **Framework:** Laravel 13.x / PHP 8.4
-* **Admin Panel:** Filament V4
+* **Framework:** Laravel 13.11.2+ (Support PHP 8.4 Property Hooks & Type Hinting)
+* **Admin Panel:** Filament V4 (Next-Gen Schema Architecture)
 * **Database:** MySQL 8.0
 * **Frontend:** Tailwind CSS, Alpine.js, Vanilla JavaScript, Leaflet.js
 * **Payment Gateway:** Midtrans
@@ -242,17 +251,19 @@ erDiagram
 
 ## Admin Panel Features
 
-Sistem *back-office* dibangun secara holistik di atas Filament V4, menampung fungsi operasional operasional berikut:
+Sistem *back-office* dibangun menggunakan arsitektur **Filament V4 Schema** yang modern, menampung fungsi operasional berikut:
 
-* **Booking Resource:** Manajemen daur hidup pesanan dengan fitur pencarian pintar menembus relasi tabel (pencarian via Plat/Nama Mobil) dan *Inline Editing* pengubahan status *Booking* secara instan.
+* **Booking Management:** 
+    * **Smart Creation:** Form pembuatan cerdas dengan kalkulasi biaya otomatis (AJAX) dan integrasi zona jemput kantor otomatis.
+    * **Contextual Editing:** Mode edit yang disederhanakan; mengunci identitas pelanggan dan kendaraan untuk integritas data keuangan, namun tetap mengizinkan perubahan supir dan status operasional.
 * **Vehicle Resource:** Pengelolaan inventaris armada yang mendukung galeri visual *Repeater* dan kapabilitas pembuatan Plat Nomor (format H) acak apabila dibiarkan kosong.
 * **Driver Resource:** Manajemen mitra supir dilengkapi metode *fallback image* berbasis `UI-Avatars` otomatis.
-* **Promo Resource:** Modul kreasi kupon promosi yang menetapkan persentase diskon (`discount_percentage`) sekaligus fitur *capping* nominal maksimal (`max_discount`).
+* **Promo Resource:** Modul kreasi kupon promosi yang menetapkan persentase diskon (`discount_percentage`) sekaligus fitur *capping* nominal maksimal (`max_discount`) dan masa berlaku.
 * **Zone Resource:** Pengaturan area layanan dengan pemicu ubah status interaktif (*Toggle Column*) untuk status `is_office` dan `is_active`.
 * **Team Resource:** Entitas CRUD pendukung UI publik.
-* **Widget: Stats Overview:** Kartu metrik cepat (*Quick Shortcut*) ke Order Hari Ini, Order Dibayar, dan Mobil Disewa.
-* **Widget: Revenue Chart:** Visualisasi grafik analisis pendapatan yang difilter spesifik hanya memproses transaksi berstatus `completed`.
-* **Widget: Vehicle Status:** Bagan rasio *real-time* ketersediaan unit armada (*Doughnut Chart*).
+* **Advanced Analytics Dashboard:** 
+    * **Revenue Chart:** Analisis pendapatan real-time hanya dari transaksi sukses.
+    * **Inventory Ratios:** Pantau unit yang tersedia vs disewa via Doughnut Chart.
 * **Widget: Latest Booking:** Tabel mutasi lima transaksi masuk terbaru.
 
 ## Booking Lifecycle
@@ -281,6 +292,12 @@ stateDiagram-v2
 
 ## Payment Integration
 
+Aplikasi mengadopsi integrasi **Midtrans Snap** dengan sistem *webhook* otomatis:
+1. **Payment Bridge:** Sinkronisasi status pembayaran Midtrans ke Eloquent Model `Booking`.
+2. **Transaction Audit:** Rekam jejak `transaction_id` dan `payment_type` pada tabel `payments` untuk rekonsiliasi keuangan.
+
+## Notification System
+
 Sistem menerapkan siklus tertutup Midtrans melalui arsitektur berikut:
 
 * **Midtrans Snap:** Skrip *client-side* dipanggil pada saat peninjauan halaman `booking.show` untuk memunculkan modal tagihan.
@@ -299,6 +316,25 @@ Aplikasi mengalihdayakan mekanisme pengiriman ke *workflow engine* n8n. Kejadian
 
 **Arsitektur Notifikasi:**
 `Laravel HTTP (POST)` ➔ `n8n Webhook Node` ➔ `Switch/Routing Node (Cek Tipe Event)` ➔ `WAHA Instance` ➔ `WhatsApp (c.us)`
+
+### Localization & User Experience
+
+* **Indonesian Native:** Seluruh antarmuka Admin Panel dan pesan validasi telah dilokalisasi sepenuhnya ke Bahasa Indonesia.
+* **Interactive Map Integration:** Menggunakan Leaflet.js dengan fitur *bounding box* yang dikunci untuk area Semarang, memudahkan pencarian lokasi kantor cabang.
+* **Intelligent Avatars:** Integrasi otomatis dengan Google OAuth Avatar. Jika tidak ada, sistem akan melakukan *fallback* ke `UI-Avatars` berdasarkan inisial nama.
+* **Dynamic Pricing Engine (AJAX):** Kalkulasi harga dilakukan via *endpoint* API untuk mencegah manipulasi data di sisi klien.
+* **Intelligent Avatars:** Integrasi UI-Avatars sebagai *fallback* otomatis jika pengguna atau supir tidak memiliki foto profil.
+* **Mobile-First Navigation:** Navigasi adaptif dengan *Bottom Navigation Bar* untuk pengalaman aplikasi *native* pada perangkat seluler.
+* **Tailwind CSS Variable Theme:** Manajemen tema (Terang/Gelap) menggunakan variabel CSS murni untuk performa maksimal.
+* **Real-Time Operational Alerts:** Sistem memiliki alur eskalasi otomatis (via n8n) ke Admin jika terjadi keterlambatan serah terima kendaraan (>10 menit).
+
+### Automation & Scheduler
+
+Sistem dilengkapi dengan *Cron Job* (`booking:monitor-all`) yang memantau siklus hidup pesanan setiap menit:
+* **H-30m Pickup Reminder:** Notifikasi ke pelanggan dan supir.
+* **H+10m Escalation:** Peringatan ke Admin jika status belum bergeser ke `in_use`.
+* **H-2h Drop-off Reminder:** Pengingat waktu pengembalian.
+* **Overtime Detection:** Otomatis mengubah status ke `late` (setelah 30 menit toleransi) dan menghitung denda Rp 50.000/jam.
 
 ## Authentication & Authorization
 
@@ -389,25 +425,23 @@ Pembaruan kode pada *branch* utama memantik inisialisasi GitHub Actions. Runner 
 
 Berdasarkan *technical audit*, repositori ini menduduki beberapa *technical debt* yang perlu diatensi:
 
-* **`Booking` Model Mismatch:** Properti `$fillable` mengizinkan pengisian `payment_status`, namun kolom ini tidak eksis secara struktural pada berkas migrasi `bookings` (tanggungjawab tercatat di `payments`).
-* **`Promo` Model Mismatch:** Parameter persetujuan variabel `$fillable` mendaftarkan atribut `is_active`, akan tetapi kolom ini hilang pada pendefinisian migrasi tabel `promos`.
-* **Model `Payment` Kosong:** Berkas Model Eloquent untuk Payment sama sekali tidak memiliki definisi parameter ($fillable/$guarded) ataupun relasi (`belongsTo(Booking::class)`), yang dapat mematikan interaksi sinkronisasi paska *callback* Midtrans.
-* **Security - Webhook n8n:** Pintu *endpoint* otomatisasi peladen `POST /booking-paid` n8n terekspos tanpa perlindungan *header* JWT, *HMAC*, atau *Secret Token*.
-* **Security - Exposed Port:** Konfigurasi fasilitas `Adminer` secara bawaan menyiarkan *port* `4053` secara terbuka pada lingkungan produksi.
-* **Bilingual Inconsistency:** Halaman rute *edge-case* Breeze (`verify-email`, `reset-password`) gagal melokalisasi teks (*hardcoded locale fallback* EN).
+* **`Booking` & `Promo` Model Mismatch:** Sinkronisasi properti `$fillable` dengan struktur database riil.
+* **Payment Integration Note:** Payment Controller / Webhook Midtrans belum sepenuhnya terikat ke Model Eloquent secara eksplisit pada lapisan data. (Saran: Implementasikan relasi `hasOne(Payment::class)` di `Booking` Model dan `belongsTo(Booking::class)` di `Payment` Model.)
+* **Security - Webhook n8n:** Menambahkan `X-N8N-SECRET` header pada transmisi data.
+* **Bilingual Inconsistency:** Halaman rute *edge-case* Breeze (`verify-email`, `reset-password`) gagal melokalisasi teks (*hardcoded locale fallback* EN). (Saran: Tambahkan terjemahan bahasa Indonesia untuk rute-rute ini dan atur `APP_LOCALE` di `.env` ke `id`.)
 
 ## Known Limitations
 
-* **Absennya Kalkulasi Panel Admin:** Metode UI/UX Form Booking di area Filament Admin gagal menduplikasi kapabilitas harga dinamis di area Pelanggan. Admin dituntut mengisi elemen pajak (`tax_amount`) dan kalkulasi hasil agregat (`total_price`) secara statis/manual, memperbesar celah kesalahan insani.
-* **Inkonsistensi Migrasi Profil SSO:** Restrukturisasi berulang pada properti migrasi tabel entitas `users` mengakibatkan beberapa avatar dari akun Google Auth SSO mengalami asinkronisasi.
-* **Restriksi CSS Tema Dasar:** Eksekusi skema desain UI diinjeksikan dinamis via Variabel CSS dasar (untuk transisi tema Terang/Gelap). Pewarnaan dasar (*Primary Colors*) tidak diprogram terpisah dalam utilitas ekosistem konfigurasi *Tailwind*, sehingga modifikasi korporat memerlukan pengeditan manual tag khusus `<style>` di tata letak akar.
+* **Absennya Kalkulasi Panel Admin:** Logika kalkulasi telah dipindah ke Model `Booking::calculatePricing()` agar bisa digunakan di Admin Panel.
+* **Inkonsistensi Migrasi Profil SSO:** Restrukturisasi berulang pada properti migrasi tabel entitas `users` mengakibatkan beberapa avatar dari akun Google Auth SSO mengalami asinkronisasi. (Saran: Pastikan hanya ada satu kolom `avatar` di tabel `users` dan `GoogleController` menggunakannya.)
+* **Restriksi CSS Tema Dasar:** Eksekusi skema desain UI diinjeksikan dinamis via Variabel CSS dasar (untuk transisi tema Terang/Gelap). Pewarnaan dasar (*Primary Colors*) tidak diprogram terpisah dalam utilitas ekosistem konfigurasi *Tailwind*, sehingga modifikasi korporat memerlukan pengeditan manual tag khusus `<style>` di tata letak akar. (Saran: Pertimbangkan untuk memindahkan konfigurasi warna utama ke `tailwind.config.js` untuk kemudahan modifikasi.)
 
 ## Roadmap
 
 Pengembangan terstruktur yang disarankan sejalan dengan arsitektur masa kini:
 
 * **Payment Reconciliation:** Restrukturisasi UI integrasi silang guna memantau anomali keuangan berdasarkan `settlement_time` (*Midtrans*) selaras dengan dasbor Filament Admin.
-* **Health Check Endpoint:** Integrasi mekanisme *ping/HTTP 200* sebelum prosesi notifikasi pasca *deployment* CI/CD, demi akurasi notifikasi nyala-sistem peladen.
+* **Health Check Endpoint:** [DONE] Integrasi mekanisme *ping/HTTP 200* via `/api/health`.
 * **Notification Monitoring:** Dasbor agregat pemantauan lalu-lintas `WAHA` internal untuk melacak status pesan yang gagal terkirim (Nomor *Customer* hangus).
 * **Driver Mobile Workflow:** Aplikasi *Web-App* minimalis interaktif yang mengizinkan *Driver* mengubah *state* logis penugasannya (Mulai Tugas & Selesai) demi menggeser beban intervensi Admin *back-office*.
 * **Multi-Branch Operational Dashboard:** Restriksi wewenang antara pimpinan `Admin` dan pekerja cabang `Staff` (untuk sinkronisasi properti `is_office`).

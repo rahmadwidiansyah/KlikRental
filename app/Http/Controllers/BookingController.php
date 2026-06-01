@@ -114,60 +114,36 @@ class BookingController extends Controller
             $user->update(['phone_number' => $request->phone_number]);
         }
 
-        $durationHours = $start->diffInHours($end);
-        $durationDays = ceil($durationHours / 24) ?: 1;
-
-        $vehicle = Vehicle::findOrFail($request->vehicle_id);
-        $pickupZone = Zone::findOrFail($request->pickup_zone_id);
-        $dropoffZone = Zone::findOrFail($request->dropoff_zone_id);
-
-        $driverRate = 0;
-        if ($request->driver_id) {
-            $driver = Driver::findOrFail($request->driver_id);
-            $driverRate = $driver->daily_rate;
+        try {
+            $pricing = $this->calculateBookingPricing(
+                $request->vehicle_id,
+                $request->start_date,
+                $request->end_date,
+                $request->pickup_zone_id,
+                $request->dropoff_zone_id,
+                $request->driver_id,
+                $request->promo_code
+            );
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
         }
-
-        $basePrice = ($vehicle->price_per_day + $driverRate) * $durationDays;
-        $subtotal = $basePrice + $pickupZone->additional_cost + $dropoffZone->additional_cost;
-
-        $promoId = null;
-        $discountAmount = 0;
-
-        if ($request->promo_code) {
-            $promo = Promo::where('code', $request->promo_code)
-                ->where('valid_until', '>=', now())
-                ->first();
-
-            if ($promo) {
-                $discountAmount = ($promo->discount_percentage / 100) * $subtotal;
-                if ($discountAmount > $promo->max_discount) {
-                    $discountAmount = $promo->max_discount;
-                }
-                $promoId = $promo->id;
-            }
-        }
-
-        $priceAfterPromo = $subtotal - $discountAmount;
-        $taxRate = 11;
-        $taxAmount = $priceAfterPromo * ($taxRate / 100);
-        $totalPrice = $priceAfterPromo + $taxAmount;
 
         $bookingCode = 'KR-' . strtoupper(Str::random(6)) . '-' . time();
 
         Booking::create([
             'booking_code' => $bookingCode,
             'user_id' => $user->id,
-            'vehicle_id' => $vehicle->id,
+            'vehicle_id' => $request->vehicle_id,
             'driver_id' => $request->driver_id,
-            'pickup_zone_id' => $pickupZone->id,
-            'dropoff_zone_id' => $dropoffZone->id,
-            'promo_id' => $promoId,
-            'start_date' => $start,
-            'end_date' => $end,
-            'subtotal' => $subtotal,
-            'tax_rate' => $taxRate,
-            'tax_amount' => $taxAmount,
-            'total_price' => $totalPrice,
+            'pickup_zone_id' => $request->pickup_zone_id,
+            'dropoff_zone_id' => $request->dropoff_zone_id,
+            'promo_id' => $pricing['promo_id'],
+            'start_date' => $pricing['start_date'],
+            'end_date' => $pricing['end_date'],
+            'subtotal' => $pricing['subtotal'],
+            'tax_rate' => $pricing['tax_rate'],
+            'tax_amount' => $pricing['tax_amount'],
+            'total_price' => $pricing['total_price'],
             'status' => 'pending'
         ]);
 
@@ -181,16 +157,48 @@ class BookingController extends Controller
         }
 
         try {
-            $start = Carbon::parse($request->start_date);
-            $end = Carbon::parse($request->end_date);
+            $pricing = $this->calculateBookingPricing(
+                $request->vehicle_id,
+                $request->start_date,
+                $request->end_date,
+                $request->pickup_zone_id,
+                $request->dropoff_zone_id,
+                $request->driver_id,
+                $request->promo_code,
+                true // check overlap
+            );
 
-            if ($start->greaterThanOrEqualTo($end)) {
-                return response()->json(['status' => 'error', 'message' => 'Tanggal kembali tidak valid.']);
-            }
+            return response()->json([
+                'status' => 'success',
+                'duration_days' => $pricing['duration_days'],
+                'vehicle_cost' => 'Rp ' . number_format($pricing['vehicle_cost'], 0, ',', '.'),
+                'driver_cost' => 'Rp ' . number_format($pricing['driver_cost'], 0, ',', '.'),
+                'pickup_cost' => 'Rp ' . number_format($pricing['pickup_cost'], 0, ',', '.'),
+                'dropoff_cost' => 'Rp ' . number_format($pricing['dropoff_cost'], 0, ',', '.'),
+                'promo_valid' => $pricing['promo_valid'],
+                'promo_percentage' => $pricing['promo_percentage'],
+                'promo_discount' => '- Rp ' . number_format($pricing['promo_discount'], 0, ',', '.'),
+                'promo_message' => $pricing['promo_message'],
+                'tax_cost' => 'Rp ' . number_format($pricing['tax_amount'], 0, ',', '.'),
+                'total_price' => 'Rp ' . number_format($pricing['total_price'], 0, ',', '.')
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
+        }
+    }
 
+    private function calculateBookingPricing($vehicleId, $startDate, $endDate, $pickupZoneId, $dropoffZoneId, $driverId = null, $promoCode = null, $checkOverlap = false)
+    {
+        $start = Carbon::parse($startDate);
+        $end = Carbon::parse($endDate);
+
+        if ($start->greaterThanOrEqualTo($end)) {
+            throw new \Exception('Tanggal kembali tidak valid.');
+        }
+
+        if ($checkOverlap) {
             $startMinus2Days = (clone $start)->subDays(2);
-
-            $isOverlap = Booking::where('vehicle_id', $request->vehicle_id)
+            $isOverlap = Booking::where('vehicle_id', $vehicleId)
                 ->whereNotIn('status', ['cancelled'])
                 ->where(function ($q) use ($startMinus2Days, $end) {
                     $q->where('start_date', '<=', $end)
@@ -198,69 +206,80 @@ class BookingController extends Controller
                 })->exists();
 
             if ($isOverlap) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Mohon maaf, mobil sudah dipesan.'
-                ]);
+                throw new \Exception('Mohon maaf, mobil sudah dipesan.');
             }
-
-            $durationHours = $start->diffInHours($end);
-            $durationDays = ceil($durationHours / 24) ?: 1;
-
-            $vehicle = Vehicle::find($request->vehicle_id);
-            $pickupZone = Zone::find($request->pickup_zone_id);
-            $dropoffZone = Zone::find($request->dropoff_zone_id);
-            $driverRate = $request->driver_id ? Driver::find($request->driver_id)->daily_rate : 0;
-
-            $vehicleCost = $vehicle->price_per_day * $durationDays;
-            $driverCost = $driverRate * $durationDays;
-
-            $pickupCost = $pickupZone->additional_cost;
-            $dropoffCost = $dropoffZone->additional_cost;
-
-            $subtotal = $vehicleCost + $driverCost + $pickupCost + $dropoffCost;
-
-            $promoValid = false;
-            $promoMessage = '';
-            $promoDiscount = 0;
-            $promoPercentage = 0;
-
-            if ($request->promo_code) {
-                $promo = Promo::where('code', $request->promo_code)->where('valid_until', '>=', now())->first();
-                if ($promo) {
-                    $promoValid = true;
-                    $promoPercentage = $promo->discount_percentage;
-
-                    $discount = ($promoPercentage / 100) * $subtotal;
-                    $promoDiscount = $discount > $promo->max_discount ? $promo->max_discount : $discount;
-
-                    $promoMessage = "";
-                } else {
-                    $promoMessage = 'Kode promo tidak valid atau sudah kadaluarsa.';
-                }
-            }
-
-            $priceAfterPromo = $subtotal - $promoDiscount;
-            $taxAmount = $priceAfterPromo * 0.11;
-            $totalPrice = $priceAfterPromo + $taxAmount;
-
-            return response()->json([
-                'status' => 'success',
-                'duration_days' => $durationDays,
-                'vehicle_cost' => 'Rp ' . number_format($vehicleCost, 0, ',', '.'),
-                'driver_cost' => 'Rp ' . number_format($driverCost, 0, ',', '.'),
-                'pickup_cost' => 'Rp ' . number_format($pickupCost, 0, ',', '.'),
-                'dropoff_cost' => 'Rp ' . number_format($dropoffCost, 0, ',', '.'),
-                'promo_valid' => $promoValid,
-                'promo_percentage' => $promoPercentage,
-                'promo_discount' => '- Rp ' . number_format($promoDiscount, 0, ',', '.'),
-                'promo_message' => $promoMessage,
-                'tax_cost' => 'Rp ' . number_format($taxAmount, 0, ',', '.'),
-                'total_price' => 'Rp ' . number_format($totalPrice, 0, ',', '.')
-            ]);
-        } catch (\Exception $e) {
-            return response()->json(['status' => 'error', 'message' => 'Format tanggal salah.']);
         }
+
+        $durationHours = $start->diffInHours($end);
+        $durationDays = ceil($durationHours / 24) ?: 1;
+
+        $vehicle = Vehicle::findOrFail($vehicleId);
+        $pickupZone = Zone::findOrFail($pickupZoneId);
+        $dropoffZone = Zone::findOrFail($dropoffZoneId);
+        
+        $driverRate = 0;
+        if ($driverId) {
+            $driver = Driver::find($driverId);
+            if ($driver) {
+                $driverRate = $driver->daily_rate;
+            }
+        }
+
+        $vehicleCost = $vehicle->price_per_day * $durationDays;
+        $driverCost = $driverRate * $durationDays;
+        $pickupCost = $pickupZone->additional_cost;
+        $dropoffCost = $dropoffZone->additional_cost;
+
+        $subtotal = $vehicleCost + $driverCost + $pickupCost + $dropoffCost;
+
+        $promoId = null;
+        $promoDiscount = 0;
+        $promoPercentage = 0;
+        $promoValid = false;
+        $promoMessage = '';
+
+        if ($promoCode) {
+            $promo = Promo::where('code', $promoCode)
+                ->where('valid_until', '>=', now())
+                ->first();
+
+            if ($promo) {
+                $promoValid = true;
+                $promoId = $promo->id;
+                $promoPercentage = $promo->discount_percentage;
+                $promoDiscount = ($promoPercentage / 100) * $subtotal;
+                if ($promoDiscount > $promo->max_discount) {
+                    $promoDiscount = $promo->max_discount;
+                }
+            } else {
+                $promoMessage = 'Kode promo tidak valid atau sudah kadaluarsa.';
+            }
+        }
+
+        $priceAfterPromo = $subtotal - $promoDiscount;
+        $taxRate = 11;
+        $taxAmount = $priceAfterPromo * ($taxRate / 100);
+        $totalPrice = $priceAfterPromo + $taxAmount;
+
+        return [
+            'start_date' => $start,
+            'end_date' => $end,
+            'duration_days' => $durationDays,
+            'vehicle' => $vehicle,
+            'vehicle_cost' => $vehicleCost,
+            'driver_cost' => $driverCost,
+            'pickup_cost' => $pickupCost,
+            'dropoff_cost' => $dropoffCost,
+            'subtotal' => $subtotal,
+            'promo_id' => $promoId,
+            'promo_valid' => $promoValid,
+            'promo_percentage' => $promoPercentage,
+            'promo_discount' => $promoDiscount,
+            'promo_message' => $promoMessage,
+            'tax_rate' => $taxRate,
+            'tax_amount' => $taxAmount,
+            'total_price' => $totalPrice,
+        ];
     }
 
     public function show($bookingCode)
