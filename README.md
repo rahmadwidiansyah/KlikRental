@@ -74,7 +74,8 @@ flowchart TD
 Pelanggan berinteraksi penuh dengan antarmuka yang disajikan oleh Laravel. Saat pelanggan memproses *checkout*, Laravel menghasilkan *Snap Token* via Midtrans API. Pelanggan membayar melalui antarmuka Snap. Midtrans kemudian mengirimkan notifikasi *Webhook* (*server-to-server*) kembali ke Laravel (`/midtrans/callback`). Berdasarkan validasi pembayaran (*Settlement*), Laravel merubah *state* `Booking` menjadi `paid`. Setiap pergerakan *state* krusial pada transaksi, Laravel mengirimkan HTTP POST (berisi *JSON Payload*) ke n8n. n8n mendistribusikan *logic routing* kondisional (seperti apakah pesanan lepas kunci atau menggunakan supir) sebelum meneruskan pesan ke layanan WAHA untuk *broadcast* notifikasi ke perangkat seluler pengguna.
 
 ## Database Overview
-```erDiagram
+```mermaid
+erDiagram
     users {
         bigint id PK
         string name
