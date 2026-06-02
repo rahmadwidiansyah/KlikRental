@@ -13,15 +13,30 @@
                 
                 <div class="mt-3">
                     @if($booking->status == 'pending')
-                    <span class="bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1 rounded-full font-inter font-bold text-[11px] inline-flex items-center gap-1.5">
-                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> {{ strtoupper($booking->status) }}
-                    </span>
+                        <span class="bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1 rounded-full font-inter font-bold text-[11px] inline-flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> {{ strtoupper($booking->status) }}
+                        </span>
+                    @elseif($booking->status == 'cancelled')
+                        <span class="bg-red-100 text-red-700 border border-red-200 px-3 py-1 rounded-full font-inter font-bold text-[11px] inline-flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-red-600"></span> {{ strtoupper($booking->status) }}
+                        </span>
                     @else
-                    <span class="bg-forest-light text-forest-green border border-forest-green/20 px-3 py-1 rounded-full font-inter font-bold text-[11px] inline-flex items-center gap-1.5">
-                        <span class="w-1.5 h-1.5 rounded-full bg-forest-green"></span> {{ strtoupper($booking->status) }}
-                    </span>
+                        <span class="bg-green-100 text-green-700 border border-green-200 px-3 py-1 rounded-full font-inter font-bold text-[11px] inline-flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-green-600"></span> {{ strtoupper($booking->status) }}
+                        </span>
                     @endif
                 </div>
+
+                @if($booking->status == 'pending')
+                <div class="mt-6 p-4 bg-surface-container border border-outline-variant/60 rounded-xl inline-block w-full max-w-sm">
+                    <p class="font-inter text-[12px] text-on-surface-variant mb-2 uppercase tracking-widest font-bold">Batas Waktu Pembayaran</p>
+                    <div id="countdown" class="font-mono text-2xl font-bold text-primary flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined animate-spin text-[24px]">schedule</span>
+                        -- : -- : --
+                    </div>
+                    <p class="font-inter text-[11px] text-on-surface-variant/70 mt-2 italic">Pesanan otomatis batal jika tidak dibayar dalam 60 menit.</p>
+                </div>
+                @endif
             </div>
 
             <!-- Detail Perjalanan -->
@@ -118,7 +133,7 @@
                         @endphp
 
                         @if($booking->promo && $discounted > 0)
-                        <div class="grid grid-cols-3 py-3 text-forest-green font-semibold">
+                        <div class="grid grid-cols-3 py-3 text-green-700 font-semibold">
                             <div class="col-span-2 flex items-center gap-1">
                                 <span class="material-symbols-outlined text-[16px]">local_offer</span>
                                 Diskon Promo ({{ $booking->promo->code }})
@@ -145,20 +160,40 @@
             </div>
 
             <!-- Tombol Aksi Gabungan -->
-            <div class="text-center mt-8 pt-4 border-t border-outline-variant/30">
+            <div class="mt-8 pt-4 border-t border-outline-variant/30 text-center">
                 @if($booking->status == 'pending')
-                    <!-- Ditambahkan id="pay-button" untuk memicu javascript Snap -->
-                    <button type="button" id="pay-button" class="w-full sm:w-auto bg-forest-green text-white font-inter font-bold text-[15px] px-8 py-3.5 rounded-xl hover:bg-forest-green/90 transition-all active:scale-95 shadow-lg shadow-forest-green/20 inline-flex items-center justify-center gap-2">
-                        <span class="material-symbols-outlined text-[20px]">credit_card</span>
-                        Bayar Sekarang
-                    </button>
-                    <p class="text-[11px] text-on-surface-variant/70 mt-3 flex items-center justify-center gap-1 font-inter">
+                    
+                    <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+                        
+                        <button type="button" id="pay-button" class="w-full sm:w-auto bg-green-600 text-white font-inter font-bold text-[15px] px-8 py-3.5 rounded-xl hover:bg-green-700 transition-all active:scale-95 border border-transparent inline-flex items-center justify-center gap-2">
+                            <span class="material-symbols-outlined text-[20px]">credit_card</span>
+                            Bayar Sekarang
+                        </button>
+
+                        <form action="{{ route('booking.cancel', $booking->booking_code) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin membatalkan pesanan ini?');" class="w-full sm:w-auto">
+                            @csrf
+                            <button type="submit" class="w-full sm:w-auto bg-red-50 text-red-600 font-inter font-bold text-[15px] px-8 py-3.5 rounded-xl hover:bg-red-100 transition-all active:scale-95 border border-red-200 inline-flex items-center justify-center gap-2">
+                                <span class="material-symbols-outlined text-[20px]">cancel</span>
+                                Batalkan
+                            </button>
+                        </form>
+                        
+                    </div>
+
+                    <p class="text-[11px] text-on-surface-variant/70 mt-4 flex items-center justify-center gap-1 font-inter">
                         <span class="material-symbols-outlined text-[14px]">lock</span>
-                        Sistem pembayaran aman dan otomatis terintegrasi Midtrans
+                        Sistem pembayaran aman dan terintegrasi otomatis dengan Midtrans
                     </p>
+
+                @elseif($booking->status == 'cancelled')
+                    <button disabled class="w-full sm:w-auto bg-red-50 text-red-500 font-inter font-bold text-[15px] px-8 py-3.5 rounded-xl cursor-not-allowed inline-flex items-center justify-center gap-2 border border-red-200">
+                        <span class="material-symbols-outlined text-[20px]">block</span>
+                        Dibatalkan
+                    </button>
+                    
                 @else
-                    <button disabled class="w-full sm:w-auto bg-outline-variant/30 text-on-surface-variant/60 font-inter font-bold text-[15px] px-8 py-3.5 rounded-xl cursor-not-allowed inline-flex items-center justify-center gap-2 border border-outline-variant/40">
-                        <span class="material-symbols-outlined text-[20px] text-forest-green icon-fill">check_circle</span>
+                    <button disabled class="w-full sm:w-auto bg-gray-100 text-gray-500 font-inter font-bold text-[15px] px-8 py-3.5 rounded-xl cursor-not-allowed inline-flex items-center justify-center gap-2 border border-gray-200">
+                        <span class="material-symbols-outlined text-[20px] text-green-600 icon-fill">check_circle</span>
                         Lunas
                     </button>
                 @endif
@@ -189,6 +224,46 @@
                 }
             });
         };
+    </script>
+
+    <script>
+        // Countdown Timer Logic
+        (function() {
+            const createdAt = new Date("{{ $booking->created_at->toIso8601String() }}").getTime();
+            const expiryTime = createdAt + (60 * 60 * 1000); // 1 Jam
+            const countdownEl = document.getElementById('countdown');
+
+            if (!countdownEl) return;
+
+            const timer = setInterval(function() {
+                const now = new Date().getTime();
+                const distance = expiryTime - now;
+
+                if (distance < 0) {
+                    clearInterval(timer);
+                    countdownEl.innerHTML = "<span class='text-red-500 font-bold'>WAKTU HABIS</span>";
+                    countdownEl.classList.add('text-red-500');
+                    
+                    // Auto-reload setelah 2 detik untuk sinkronisasi status cancelled dari backend
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                    return;
+                }
+
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                const displayHours = String(hours).padStart(2, '0');
+                const displayMinutes = String(minutes).padStart(2, '0');
+                const displaySeconds = String(seconds).padStart(2, '0');
+
+                countdownEl.innerHTML = `
+                    <span class="material-symbols-outlined text-[24px]">schedule</span>
+                    ${displayHours}:${displayMinutes}:${displaySeconds}`;
+            }, 1000);
+        })();
     </script>
     @endif
 </x-app-layout>

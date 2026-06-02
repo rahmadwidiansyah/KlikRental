@@ -1,7 +1,7 @@
 # KlikRental
 
 ![PHP Version](https://img.shields.io/badge/php-8.4-777bb3?style=flat-square&logo=php)
-![Laravel Version](https://img.shields.io/badge/laravel-13.x-ff2d20?style=flat-square&logo=laravel)
+![Laravel Version](https://img.shields.io/badge/laravel-11.x-ff2d20?style=flat-square&logo=laravel)
 ![Filament Version](https://img.shields.io/badge/filament-v4-fbbf24?style=flat-square&logo=laravel)
 ![TailwindCSS](https://img.shields.io/badge/tailwind-3.4-38bdf8?style=flat-square&logo=tailwind-css)
 ![Database](https://img.shields.io/badge/mysql-8.0-4479a1?style=flat-square&logo=mysql)
@@ -10,40 +10,46 @@
 
 ## Overview
 
-**KlikRental** adalah platform manajemen penyewaan kendaraan berbasis web berskala enterprise yang dirancang untuk mendigitalisasi dan mengotomatisasi operasional UMKM rental kendaraan. Sistem ini memfasilitasi pemesanan pelanggan, alokasi inventaris, kalkulasi harga dinamis, verifikasi pembayaran digital, hingga manajemen siklus hidup penyewaan dari awal hingga pengembalian.
+**KlikRental** adalah platform manajemen penyewaan kendaraan berbasis web yang dirancang untuk mendigitalisasi operasional UMKM rental kendaraan. Sistem ini mengotomatisasi seluruh alur bisnis, mulai dari reservasi pelanggan, kalkulasi harga dinamis (zona & promo), integrasi pembayaran digital Midtrans, hingga manajemen siklus hidup armada dan supir secara *real-time*.
 
-Ruang lingkup sistem berfokus pada efisiensi manajerial *back-office* dan pengalaman mandiri pelanggan. Target pengguna terbagi menjadi **Customer** (penyewa publik) yang melakukan reservasi melalui *front-end* dan **Admin** (pengelola operasional) yang mengawasi armada dan transaksi melalui Dasbor Filament. Proses bisnis mencakup katalogisasi inventaris, transaksi pemesanan ganda (dengan/tanpa supir), perhitungan zona jemput/antar, integrasi gerbang pembayaran, dan orkestrasi notifikasi asinkron berbasis *event*.
+Sistem ini menggunakan arsitektur *event-driven* untuk sinkronisasi inventaris dan sistem notifikasi WhatsApp asinkron melalui n8n.
 
 ## Key Features
 
 ### Customer Features
 
 * **Vehicle Catalog & Real-Time Availability:** Katalog interaktif dengan visualisasi status *real-time* dan kalender Flatpickr yang secara otomatis me-*disable* tanggal yang telah dipesan untuk mencegah *overlap*.
-* **Dynamic Pricing (AJAX):** Perhitungan harga *real-time* yang merangkum biaya sewa dasar, opsi supir, tambahan zona lokasi (jemput/antar), potongan promo, dan perhitungan otomatis PPN 11%.
+* **Dynamic Pricing Engine:** Kalkulasi harga *server-side* via AJAX yang mencakup biaya sewa dasar, opsi supir, tambahan biaya zona (jemput/antar), validasi kupon promo, dan PPN 11%.
 * **Driver & Zone Selection:** Pemilihan supir interaktif dengan informasi tarif harian, jumlah jam terbang, dan rata-rata *rating*. Tersedia opsi "Lepas Kunci" secara *default*.
-* **Promo Validation:** Validasi kode promo seketika yang membatasi nilai potong melalui sistem batas maksimal diskon (*capping*).
-* **Customer Profile (KYC):** Manajemen profil komprehensif terintegrasi dengan persyaratan operasional, mengumpulkan NIK (16 digit), Nomor WhatsApp valid, KTP, dan SIM.
-* **Booking History:** Dasbor riwayat penyewaan pribadi dengan representasi antarmuka adaptif (Card untuk Mobile, Table untuk Desktop).
+* **Manual Cancellation:** Tombol pembatalan mandiri pada halaman detail pesanan (hanya untuk status `pending`) guna melepaskan unit kendaraan dan supir kembali ke status *available* secara instan.
+* **Customer Profile (KYC):** Manajemen profil terintegrasi untuk mengumpulkan NIK, Nomor WhatsApp, serta unggahan dokumen KTP dan SIM.
+* **Invoice & Countdown Timer:** Tampilan detail pesanan modern dengan *countdown timer* 60 menit untuk batas pembayaran dan integrasi pembayaran Midtrans Snap.
 
 ### Booking Features
 
 * **Double-Booking Protection:** Mesin validasi *backend* tingkat lanjut yang mengunci ketersediaan armada dan jadwal supir secara spesifik pada rentang tanggal transaksi.
-* **Automated Inventory Sync:** Admin tidak perlu mengubah status Mobil/Supir secara manual saat mobil keluar/masuk. Sistem secara otomatis memperbarui status inventaris berdasarkan perubahan status *Booking* menggunakan fitur Eloquent `booted()`.
-* **Review Submission:** Penilaian pasca-penyewaan multi-aspek (Kondisi Kendaraan, Pelayanan Perusahaan, dan Kinerja Supir).
+* **Automated Inventory Sync:** Menggunakan Eloquent `booted()` pada model `Booking`. Status `Vehicle` dan `Driver` berubah otomatis menjadi `rented`/`on_duty` saat pesanan `in_use`, dan kembali `available` saat pesanan `completed` atau `cancelled`.
+* **Post-Rental Review:** Penilaian multi-aspek (Kendaraan, Supir, Perusahaan) yang hanya dapat diisi setelah status pesanan mencapai `completed`.
 
 ### Payment Features
 
-* **Midtrans Snap Integration:** *Pop-up* tagihan *on-the-fly* tanpa perlu perpindahan rute URL.
-* **Automated Status Update:** Sinkronisasi status reservasi internal (*pending* ke *paid*) secara instan menerima *callback* dari *Webhook* Midtrans.
+* **Midtrans Snap Integration:** Integrasi *pop-up* pembayaran tanpa *redirect* halaman menggunakan Snap Token.
+* **Automated Status Update:** Sinkronisasi status reservasi otomatis (`pending` -> `paid` -> `cancelled`) melalui *callback* Webhook Midtrans.
+* **Expiry Protection:** Pembatalan otomatis oleh sistem jika pembayaran tidak diselesaikan dalam waktu 60 menit.
 
 ### Authentication Features
 
-* **Google OAuth (SSO):** Pendaftaran akun dan akses login instan yang terhubung langsung dengan integrasi *avatar* profil pengguna. (Saran: Sebutkan bahwa pelanggan yang mendaftar via Google tidak perlu mengunggah foto profil manual karena *avatar* Google mereka otomatis disinkronisasi.)
+* **Google OAuth (SSO):** Pendaftaran dan login instan dengan sinkronisasi avatar otomatis.
 * **Role Management:** Sistem *role-based access control* yang membedakan rute fungsional antara `admin` dan `customer`.
-* **Identity Collection (KYC):** Mendukung pengumpulan data identitas operasional seperti NIK, Nomor WhatsApp, KTP, dan SIM.
-### Notification Features
 
-* **Event-Driven Messaging:** Infrastruktur pengiriman *webhook* asinkron untuk mentransmisikan status siklus pesanan kepada *Customer*, *Driver*, dan *Admin* melalui WhatsApp (via n8n).
+## Automation & Scheduler
+
+Sistem dilengkapi dengan *Cron Job* (`booking:monitor-all`) yang memantau siklus hidup pesanan setiap menit:
+* **Cleanup Expired Bookings:** Mengubah status pesanan `pending` menjadi `cancelled` jika melewati batas waktu bayar (60 menit).
+* **H-30m Pickup Reminder:** Notifikasi ke pelanggan dan supir via WhatsApp.
+* **H+10m Escalation:** Peringatan ke Admin jika unit belum diserahterimakan (`in_use`) tepat waktu.
+* **H-2h Drop-off Reminder:** Pengingat pengembalian unit.
+* **Overtime Detection:** Otomatis mengubah status ke `late` dan menghitung denda Rp 50.000/jam setelah toleransi 30 menit.
 
 ## Tech Stack
 
@@ -246,7 +252,7 @@ erDiagram
 | **Promo** | Modul pengurang harga (diskon) dengan restriksi periode aktif dan proteksi limit potongan maksimum. | `hasMany(Booking)` |
 | **Booking** | Transaksi utama (*Pivot/Core*) yang menghubungkan kendaraan, supir, lokasi, dan promosi dengan siklus *state-machine* penyewaan. | `belongsTo(User, Vehicle, Driver, Zone, Promo)`, `hasMany(Payment)`, `hasOne(Review)` |
 | **Payment** | Catatan rekam jejak (*Audit Trail*) aktivitas pembayaran yang bersumber dari respon pihak ketiga (Midtrans). | `belongsTo(Booking)` |
-| **Review** | Mekanisme *feedback* pasca-penyewaan, menampung nilai terpisah untuk aset, supir, dan sistem. | `belongsTo(Booking)`, `belongsTo(User)` |
+| **Review** | Mekanisme *feedback* pasca-penyewaan untuk aset, supir, dan sistem. | `belongsTo(Booking)`, `belongsTo(User)` |
 | **TeamMember** | Entitas independen statis untuk mengisi data profil staf/kelompok pada antarmuka *Landing Page* (Tentang Kami). | - |
 
 ## Admin Panel Features

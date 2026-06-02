@@ -10,6 +10,12 @@ class Booking extends Model
 {
     use HasFactory;
     
+    // Konstanta untuk status terminal (tidak bisa berubah lagi)
+    public const TERMINAL_STATUSES = ['paid', 'cancelled', 'completed'];
+
+    // Konstanta untuk status yang memicu pelepasan aset (mobil/supir)
+    public const RELEASE_ASSET_STATUSES = ['completed', 'cancelled'];
+
     protected $fillable = [
         'booking_code',    
         'user_id',
@@ -48,7 +54,7 @@ class Booking extends Model
                     }
                 } 
                 // 2. Jika Booking diubah jadi COMPLETED atau CANCELLED (Sewa selesai/batal)
-                elseif (in_array($newStatus, ['completed', 'cancelled'])) {
+                elseif (in_array($newStatus, self::RELEASE_ASSET_STATUSES)) {
                     if ($booking->vehicle_id) {
                         $booking->vehicle()->update(['status' => 'available']);
                     }

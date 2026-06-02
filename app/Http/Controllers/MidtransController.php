@@ -37,6 +37,11 @@ class MidtransController extends Controller
             $oldStatus = $booking->status;
             $newStatus = $oldStatus;
 
+            // JIKA STATUS SUDAH FINAL (PAID/CANCELLED/COMPLETED), JANGAN UPDATE LAGI
+            if (in_array($oldStatus, Booking::TERMINAL_STATUSES)) {
+                return response()->json(['message' => 'Status transaksi sudah terminal, tidak ada perubahan dilakukan.']);
+            }
+
             if ($transaction == 'capture') {
                 if ($type == 'credit_card') {
                     if ($fraud == 'challenge') {

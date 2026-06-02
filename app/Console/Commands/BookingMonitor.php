@@ -22,12 +22,34 @@ class BookingMonitor extends Command
         Log::info("=== [MASTER CRON START] Waktu: {$now->toDateTimeString()} ===");
 
         // Eksekusi 3 fungsi utama secara berurutan
+        $this->checkExpiredPendingBookings($now);
         $this->checkPickupSchedules($now);
         $this->checkReturnReminders($now);
         $this->checkLateBookings($now);
 
         $this->info("Master Cron selesai dieksekusi!");
         Log::info("=== [MASTER CRON END] ===");
+    }
+
+    // ==========================================
+    // 0. FUNGSI BATALKAN PENDING (EXPIRE 1 JAM)
+    // ==========================================
+    private function checkExpiredPendingBookings($now)
+    {
+        $expiredTime = $now->copy()->subHour();
+        
+        $expiredBookings = Booking::where('status', 'pending')
+            ->where('created_at', '<=', $expiredTime)
+            ->get();
+
+        foreach ($expiredBookings as $booking) {
+            $booking->status = 'cancelled';
+            $booking->save();
+            
+            Log::info("[MASTER CRON] Pesanan Kadaluwarsa (1 Jam): {$booking->booking_code}");
+            $this->info("Batal Otomatis: " . $booking->booking_code);
+            // Catatan: Model Event di Booking.php akan otomatis melepaskan Mobil/Supir
+        }
     }
 
     // ==========================================
