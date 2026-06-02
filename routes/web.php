@@ -51,6 +51,7 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
     Route::get('/my-bookings', [BookingController::class, 'index'])->name('booking.index');
     Route::post('/booking/calculate-price', [BookingController::class, 'calculatePrice'])->name('booking.calculatePrice');
     Route::get('/booking/{booking_code}/detail', [BookingController::class, 'show'])->name('booking.show');
+    Route::post('/booking/{booking_code}/cancel', [BookingController::class, 'cancel'])->name('booking.cancel');
     
     // Fitur Review (Wajib login untuk memberi ulasan)
     Route::post('/booking/{booking_code}/review', [BookingController::class, 'storeReview'])->name('booking.review');

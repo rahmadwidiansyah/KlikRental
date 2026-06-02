@@ -14,6 +14,11 @@ class HomeController extends Controller
     // Method untuk halaman Dashboard Customer utama (menggunakan pengelompokan kelas)
     public function index(Request $request)
     {
+        // 🚨 ON-DEMAND CLEANUP: Batalkan booking pending yang sudah kedaluwarsa (> 60 menit)
+        Booking::where('status', 'pending')
+            ->where('created_at', '<=', Carbon::now()->subMinutes(60))
+            ->update(['status' => 'cancelled']);
+
         // 1. Ambil data zona/lokasi yang aktif dari database
         $zones = Zone::where('is_active', true)->get();
 
@@ -37,7 +42,7 @@ class HomeController extends Controller
 
             $startMinus2Days = (clone $start_date)->subDays(2);
 
-            $bookedVehicleIds = Booking::whereNotIn('status', ['cancelled'])
+            $bookedVehicleIds = Booking::whereNotIn('status', ['cancelled', 'completed'])
                 ->where(function ($q) use ($startMinus2Days, $end_date) {
                     $q->where('start_date', '<=', $end_date)
                         ->where('end_date', '>=', $startMinus2Days);
@@ -51,7 +56,7 @@ class HomeController extends Controller
         if (!$request->filled('start_date')) {
             $todayMinus2Days = now()->subDays(2)->startOfDay();
 
-            $todayBookedIds = Booking::whereNotIn('status', ['cancelled', 'returned'])
+            $todayBookedIds = Booking::whereNotIn('status', ['cancelled', 'completed'])
                 ->where('start_date', '<=', now()->endOfDay())
                 ->where('end_date', '>=', $todayMinus2Days)
                 ->pluck('vehicle_id')

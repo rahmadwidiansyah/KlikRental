@@ -35,7 +35,7 @@ class BookingController extends Controller
 
         // 3. Ambil data booking untuk di-disable di kalender Flatpickr
         $bookedRanges = Booking::where('vehicle_id', $vehicle->id)
-            ->whereNotIn('status', ['cancelled'])
+            ->whereNotIn('status', ['cancelled', 'completed'])
             ->where('end_date', '>=', now()->subDays(2))
             ->get()
             ->map(function ($booking) {
@@ -71,7 +71,7 @@ class BookingController extends Controller
         
         // --- 🚨 CEK BENTROK MOBIL (Dikeluarkan dari IF Supir) 🚨 ---
         $isOverlap = Booking::where('vehicle_id', $request->vehicle_id)
-            ->whereNotIn('status', ['cancelled'])
+            ->whereNotIn('status', ['cancelled', 'completed'])
             ->where(function ($q) use ($startMinus2Days, $end) {
                 $q->where('start_date', '<=', $end)
                     ->where('end_date', '>=', $startMinus2Days);
@@ -199,7 +199,7 @@ class BookingController extends Controller
         if ($checkOverlap) {
             $startMinus2Days = (clone $start)->subDays(2);
             $isOverlap = Booking::where('vehicle_id', $vehicleId)
-                ->whereNotIn('status', ['cancelled'])
+                ->whereNotIn('status', ['cancelled', 'completed'])
                 ->where(function ($q) use ($startMinus2Days, $end) {
                     $q->where('start_date', '<=', $end)
                         ->where('end_date', '>=', $startMinus2Days);
@@ -324,6 +324,27 @@ class BookingController extends Controller
         }
 
         return view('booking.show', compact('booking', 'snapToken'));
+    }
+
+    public function cancel($bookingCode)
+    {
+        $booking = Booking::where('booking_code', $bookingCode)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
+
+        // Validasi: Hanya status pending yang bisa dibatalkan secara manual oleh user
+        if ($booking->status !== 'pending') {
+            return back()->with('error', 'Maaf, pesanan yang sudah dibayar atau selesai tidak dapat dibatalkan.');
+        }
+
+        // Ubah status menjadi cancelled. 
+        // Logika pengosongan status mobil & supir otomatis berjalan via model event booted()
+        $booking->update([
+            'status' => 'cancelled'
+        ]);
+
+        return redirect()->route('booking.show', $bookingCode)
+            ->with('success', 'Pesanan Anda telah berhasil dibatalkan.');
     }
 
     public function index()
