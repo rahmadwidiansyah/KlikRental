@@ -1,7 +1,7 @@
 # KlikRental
 
 ![PHP Version](https://img.shields.io/badge/php-8.4-777bb3?style=flat-square&logo=php)
-![Laravel Version](https://img.shields.io/badge/laravel-11.x-ff2d20?style=flat-square&logo=laravel)
+![Laravel Version](https://img.shields.io/badge/laravel-13.x-ff2d20?style=flat-square&logo=laravel)
 ![Filament Version](https://img.shields.io/badge/filament-v4-fbbf24?style=flat-square&logo=laravel)
 ![TailwindCSS](https://img.shields.io/badge/tailwind-3.4-38bdf8?style=flat-square&logo=tailwind-css)
 ![Database](https://img.shields.io/badge/mysql-8.0-4479a1?style=flat-square&logo=mysql)

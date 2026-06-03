@@ -118,6 +118,13 @@
             @else
                 @foreach(['VIP', 'Premium', 'Standard'] as $className)
                     @if(isset($groupedVehicles[$className]) && $groupedVehicles[$className]->count() > 0)
+                        @php
+                            // Evaluasi UX State: Cek apakah user memfilter class tertentu
+                            $isClassFiltered = request()->filled('class') && in_array(request('class'), ['VIP', 'Premium', 'Standard']);
+                            // Tentukan porsi data yang akan dilempar ke DOM engine
+                            $vehiclesToDisplay = $isClassFiltered ? $groupedVehicles[$className] : $groupedVehicles[$className]->take(4);
+                        @endphp
+                        
                         <div class="mb-10">
                             <div class="flex justify-between items-end mb-4 pb-2 border-b border-outline-variant/30">
                                 <div>
@@ -129,13 +136,18 @@
                                         Kelas {{ $className }}
                                     </h2>
                                 </div>
+                                
+                                {{-- Tombol "Lihat Semua" hanya muncul jika skenario tanpa filter aktif --}}
+                                @if(!$isClassFiltered)
                                 <a href="{{ route('vehicle.index', ['class' => $className]) }}" class="text-primary font-inter text-[13px] font-bold hover:underline flex items-center gap-1">
                                     Lihat Semua <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
                                 </a>
+                                @endif
                             </div>
 
                             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                                @foreach($groupedVehicles[$className]->take(4) as $car) <a href="{{ route('vehicle.show', $car->id) }}" class="vehicle-card block bg-surface border border-outline-variant/60 rounded-xl overflow-hidden transition-all duration-300 premium-shadow group relative flex flex-col hover:border-primary/50 hover:shadow-lg cursor-pointer">
+                                @foreach($vehiclesToDisplay as $car) 
+                                    <a href="{{ route('vehicle.show', $car->id) }}" class="vehicle-card block bg-surface border border-outline-variant/60 rounded-xl overflow-hidden transition-all duration-300 premium-shadow group relative flex flex-col hover:border-primary/50 hover:shadow-lg cursor-pointer">
                                         
                                          @if(isset($car->is_booked_today) && $car->is_booked_today)
                                          <div class="absolute top-3 right-3 z-10">
