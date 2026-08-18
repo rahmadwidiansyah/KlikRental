@@ -40,21 +40,27 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Set working directory
 WORKDIR /var/www
-COPY . .
 
-# --- 5. Build Backend ---
+# --- 5. Install Backend Dependencies ---
 ENV COMPOSER_MEMORY_LIMIT=-1
-RUN composer install --no-dev  --optimize-autoloader
+COPY composer.json composer.lock ./
+RUN --mount=type=cache,target=/tmp/composer-cache \
+    COMPOSER_CACHE_DIR=/tmp/composer-cache composer install --no-dev --no-interaction --no-progress --no-scripts
 
-# --- 6. Build Frontend ---
-RUN npm install
-RUN npm run build
+# --- 6. Install Frontend Dependencies ---
+COPY package.json package-lock.json .npmrc ./
+RUN --mount=type=cache,target=/root/.npm npm ci
 
-# --- 7. Laravel Optimization --- 
+# --- 7. Copy Application and Build Frontend ---
+COPY . .
+RUN composer dump-autoload --no-dev --optimize --no-scripts && npm run build
 
-# --- 8. Expose Port Apache ---
+
+# --- 8. Laravel Optimization --- 
+
+# --- 9. Expose Port Apache ---
 EXPOSE 80
 
-# --- 9. Command Startup ---
+# --- 10. Command Startup ---
 # PERBAIKAN 2: Gunakan format array JSON [ "sh", "-c", "perintah..." ]
 CMD ["sh", "-c", "php artisan config:cache && php artisan route:cache && php artisan view:cache && rm -rf public/storage && php artisan storage:link && chown -R www-data:www-data storage bootstrap/cache public/storage && chmod -R 775 storage bootstrap/cache public/storage && apache2-foreground"]

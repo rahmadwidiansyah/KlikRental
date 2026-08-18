@@ -1,0 +1,14 @@
+.git
+.github
+.env
+.env.*
+!.env.example
+node_modules
+vendor
+public/build
+public/storage
+bootstrap/cache/*
+!bootstrap/cache/.gitignore
+*.log
+docker-compose.yml
+README.md
